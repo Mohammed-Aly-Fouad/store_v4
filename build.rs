@@ -6,18 +6,19 @@ fn main() {
 
     let files = [
         "static/css/base/reset.css",
-        // "static/css/base/page-grid.css",
-        // "static/css/components/header.css",
-        // "static/css/components/card.css",
+        "static/css/base/layout.css",
+        "static/css/components/flash_messages.css",
+        "static/css/components/aside.css",
+        "static/css/components/header.css",
+        "static/css/components/footer.css",
+        "static/css/components/card.css",
+        "static/css/components/search.css",
         // "static/css/components/main-content.css",
-        // "static/css/components/search.css",
-        // "static/css/components/flash_messages.css",
         // "static/css/components/buttons.css",
         // "static/css/components/form.css",
         // "static/css/components/aside.css",
         // "static/css/components/modal.css",
         // "static/css/components/toast.css",
-        // "static/css/components/sidebar.css",
     ];
 
     let mut merged = String::new();
