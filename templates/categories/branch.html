@@ -64,7 +64,7 @@
     <!--############ main ############## -->
 
     {% if category_tree.is_empty() %}
-    <p class="notfound">لا توجد أي فئات مسجلة تحت هذا المعرف</p>
+    <p class="notfound">لا توجد أي فئات فرعية مسجلة تحت هذا المعرف</p>
     {%else%}
     <main class="page-layout__main">
         <section class="collection">
@@ -73,6 +73,7 @@
 
                 <h2 class="collection__title">فئة رئيسية : {{category.main.name_ar}}</h2>
                 <span class="collection__counter">({{ category.subs.len() }})</span>
+                <a href="/web/categories/{{ category.main.id }}/edit" class="btn btn--primary">تعديل</a>
                 {% endfor %}
             </div>
             <!--###### collection grid (cards grid )  ####### -->
@@ -95,7 +96,7 @@
                         <time datetime="{{ category.main.created_at.format(" %Y-%m-%d") }}" class="card__date">
                             {{ category.main.created_at.format("%Y-%m-%d") }}
                         </time>
-                        <a href="/web/categories/{{ category.main.id }}/edit" class="btn btn--sm btn--text">تعديل</a>
+                        <a href="/web/categories/{{ sub.id }}/edit" class="btn btn--sm btn--text">تعديل</a>
 
 
 
