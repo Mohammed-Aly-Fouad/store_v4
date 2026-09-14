@@ -1,7 +1,7 @@
 use axum::{Form, Json, Router, extract::{Path, Query, State}, http::StatusCode, response::{IntoResponse, Redirect, Response}, routing::{get, post}};
 use urlencoding::encode;
 
-use crate::{domain::{category::dto::{BranchTemplate, CategoryFormDTO, CategoryResponseDTO, CategorySearchQuery, CategorySearchResultsTemplate, CategoryTemplate, CategoryTree, CreateFormPage, FlashParams}, home::dto::HomeTemplate}, state::AppState};
+use crate::{domain::{category::dto::{BranchTemplate, CategoryFormDTO, CategoryResponseDTO, CategorySearchQuery, CategorySearchResultsTemplate, CategoryTemplate, CategoryTree, CreateFormPage, EditFormPage, FlashParams}, home::dto::HomeTemplate}, state::AppState};
 
 
 
@@ -18,10 +18,9 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/branch", get(render_branch_page))
         .route("/new", get(render_new_category_page))
         .route("/", post(create_category))
-        // .route("/{id}", get(render_main_category_details_page))
-        // .route("/{id}/edit", get(render_edit_category_form))
-        // .route("/{id}/edit", post(edit_category))
-        // .route("/{id}/delete", post(delete_category))
+        .route("/{id}/edit", get(render_edit_category_form))
+        .route("/{id}/edit", post(edit_category))
+        .route("/{id}/delete", post(delete_category))
         .route("/search", get(search_categories))
 }
 
@@ -71,7 +70,24 @@ ORDER BY c.parent_id IS NOT NULL, c.id DESC;
     .await
 }
 
-
+async fn fetch_category_by_id(
+    state: &AppState,
+    id: i64,
+) -> Result<CategoryFormDTO, sqlx::Error> {
+    sqlx::query_as!(
+        CategoryFormDTO,
+        r#"SELECT
+        c.name_en,
+        c.name_ar,
+        c.notes,
+        p.name_ar AS "parent_name?"
+    FROM categories c
+    LEFT JOIN categories p ON c.parent_id = p.id
+    WHERE c.id = $1"#,
+    id,
+    ).fetch_one(&state.pool)
+    .await
+}
 
 #[axum::debug_handler]
 pub async fn render_categories_page(
@@ -285,6 +301,208 @@ async fn create_category(
                     .into_response();
                 }
             }
+        }
+    }
+}
+
+async fn render_edit_category_form(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Query(params): Query<FlashParams>,
+) -> Response {
+let all_categories = match get_all_categories(&state).await {
+        Ok(categories) => categories,
+        Err(err) => {
+            tracing::error!("فشل جلب الفئات: {:#?}", err);
+            return Redirect::to("/web/categories?error=server_error").into_response();
+        }
+    };
+
+    let category_tree = CategoryTree::build_tree(all_categories);
+
+    let category = sqlx::query_as!(
+        CategoryFormDTO,
+        r#"SELECT
+        c.name_en,
+        c.name_ar,
+        c.notes,
+        p.name_ar AS "parent_name?"
+    FROM categories c
+    LEFT JOIN categories p ON c.parent_id = p.id
+    WHERE c.id = $1"#,
+    id,
+    ).fetch_optional(&state.pool)
+    .await;
+    
+    match category {
+        Ok(Some(cat)) => {
+            let form = CategoryFormDTO {
+                name_ar: cat.name_ar,
+                name_en: cat.name_en,
+                parent_name: cat.parent_name,
+                notes: cat.notes,
+               
+            };
+
+  EditFormPage {
+                            form,
+                            category_tree,
+                            error_message: None,
+                            success_message: None,
+                            errors: None,
+                            current_page: "categories".to_string(),
+                            id,
+                        }
+                        .into_response()
+
+                    }
+            Ok(None) => {
+                Redirect::to("/web/categories?error=not_found").into_response()
+            }
+
+            Err(e) => {
+                tracing::error!("Failed to fetch category for edit: {:?}", e);
+                Redirect::to("/web/categories?error=db_error").into_response()
+        }
+    }
+    
+}
+
+
+
+async fn edit_category(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Form(mut form): Form<CategoryFormDTO>
+) -> Response {
+
+    let mut submitted_form = form;
+
+    let existing_cat = match fetch_category_by_id(&state, id).await {
+        Ok(cat) => cat,
+        Err(e) => {
+            tracing::error!(?e, "Failedto fetch category");
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR, "Internal server errore",
+            ).into_response()
+        }
+    };
+    
+    let all_categories = match get_all_categories(&state).await {
+        Ok(categories) => categories,
+        Err(err) => {
+            tracing::error!("فشل جلب الفئات: {:#?}", err);
+            return Redirect::to("/web/categories?error=server_error").into_response();
+        }
+    };
+
+    let category_tree = CategoryTree::build_tree(all_categories); 
+
+    submitted_form.sanitize();
+
+    if let Err(form_err) = submitted_form.validate(&category_tree) {
+        return EditFormPage {
+            category_tree,
+            id,
+            form: submitted_form,
+            errors: Some(form_err),
+            current_page: "categories".to_string(),
+            error_message: Some("يرجى تصحيح الأخطاء لإستكمال التعديل".to_string()),
+            success_message: None,
+        }
+        .into_response();
+    }
+
+        let is_unchanged =
+        existing_cat.name_ar == submitted_form.name_ar
+        && existing_cat.name_en == submitted_form.name_en
+        &&  existing_cat.parent_name == submitted_form.parent_name
+        && existing_cat.notes == submitted_form.notes;
+
+
+        if is_unchanged {
+            return EditFormPage {
+            category_tree,
+            id,
+            form: submitted_form,
+            errors: None,
+            current_page: "categories".to_string(),
+           error_message: Some("لم يتم إجراء أي تغييرات على البيانات".to_string()),
+            success_message: None,
+        }.into_response()
+        }
+        
+        let update_result = sqlx::query!(
+    r#"
+    UPDATE categories
+    SET
+        name_en = $1,
+        name_ar = $2,
+        parent_id = (SELECT id FROM categories WHERE name_ar = $3 LIMIT 1),
+        notes = $4
+    WHERE id = $5
+    "#,
+    &submitted_form.name_en,
+    &submitted_form.name_ar,
+    submitted_form.parent_name.as_deref(),
+    submitted_form.notes.as_deref(),
+    id,
+)
+.execute(&state.pool)
+.await;
+
+    match update_result {
+        Ok(_) => 
+        return Redirect::to("/web/categories?action=updated").into_response(),
+
+        Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
+         return EditFormPage {
+            category_tree,
+            id,
+            form: submitted_form,
+            errors: None,
+            current_page: "categories".to_string(),
+           error_message: Some("هذا البيان مسجل بالفعل".to_string()),
+            success_message: None,
+        }.into_response()
+        }
+
+        Err(err) => {
+            tracing::error!("فشل تحديث العلامة التجارية ذات المعرف {}: {:?}", id, err);
+         return EditFormPage {
+            category_tree,
+            id,
+            form: submitted_form,
+            errors: None,
+            current_page: "categories".to_string(),
+           error_message: Some("حدث خطأ عام .. برجاء المحاولة لاحقاً".to_string()),
+            success_message: None,
+        }.into_response()
+        }
+    }
+
+    }
+
+
+    async fn delete_category(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Response {
+    let delete_result = sqlx::query!(r#"DELETE FROM categories WHERE id = $1"#, id)
+        .execute(&state.pool)
+        .await;
+
+    match delete_result {
+        Ok(_) => {
+            Redirect::to("/web/categories?action=deleted").into_response()
+        }
+        Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23503") => {
+            // إعادة التوجيه مع بيان وجود سجلات مرتبطة بالفئة
+            Redirect::to("/web/categories?error=has_children").into_response()
+        }
+        Err(err) => {
+            tracing::error!("Error deleting category {}: {:?}", id, err);
+            Redirect::to("/web/categories?error=delete_failed").into_response()
         }
     }
 }
