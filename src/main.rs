@@ -40,7 +40,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("CORS middleware layer configured.");
 // 5. Build the Axum router with state and middleware attached
 let app = Router::new()
-    
     .nest("/web", router())
     .nest_service("/static", ServeDir::new("static"))
     .layer(cors)
