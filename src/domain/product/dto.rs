@@ -29,19 +29,6 @@ pub struct ProductResponseDTO {
 }
 
 
-
-
-
-#[derive(Template, WebTemplate)]
-#[template(path = "products/index.html")]
-pub struct ProductTemplate {
-    pub products: Vec<ProductWithCategoryDTO>,
-    pub error_message: Option<String>,
-    pub success_message: Option<String>,
-    pub current_page: String,
-}
-
-
 #[derive(Debug)]
 pub struct ProductWithCategoryDTO {
     pub id: i64,
@@ -54,6 +41,19 @@ pub struct ProductWithCategoryDTO {
     pub category_name_ar: String,
     pub parent_category_name_ar: Option<String>, // SQLx maps LEFT JOIN results to Option
 }
+
+
+#[derive(Template, WebTemplate)]
+#[template(path = "products/index.html")]
+pub struct ProductTemplate {
+    pub products: Vec<ProductWithCategoryDTO>,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>,
+    pub current_page: String,
+}
+
+
+
 #[derive(Debug)]
 pub struct SubCategoriesList {
     pub id: i64,
@@ -204,15 +204,15 @@ pub struct FlashParams {
 
 /// Partial HTML snippet template for HTMX/Dynamic live category search.
 #[derive(Template, WebTemplate)]
-#[template(path = "categories/search_results.html")]
-pub struct CategorySearchResultsTemplate {
-    pub categories: Vec<CategoryResponseDTO>,
+#[template(path = "products/search_results.html")]
+pub struct ProductSearchResultsTemplate {
+    pub products: Vec<ProductResponseDTO>,
     pub query: String,
 }
 
 /// URL Query parameter extractor for category live-search requests.
 #[derive(Debug, Deserialize)]
-pub struct CategorySearchQuery {
+pub struct ProductSearchQuery {
     #[serde(default)]
     pub q: String,
 }

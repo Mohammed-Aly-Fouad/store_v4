@@ -1,5 +1,6 @@
 use std::default;
 
+use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
 use axum::extract::{Query, State};
@@ -7,7 +8,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use sqlx::encode::IsNull::No;
 
 use crate::domain::{category, product};
-use crate::domain::product::dto::{ProductResponseDTO, ProductTemplate, ProductWithCategoryDTO, SubCategoriesList, FormDTO, FormErrors, FlashParams, CreateFormPage};
+use crate::domain::product::dto::{CreateFormPage, FlashParams, FormDTO, FormErrors, ProductResponseDTO, ProductSearchQuery, ProductSearchResultsTemplate, ProductTemplate, ProductWithCategoryDTO, SubCategoriesList};
 use crate::state::{self, AppState};
 
 use crate::web::category::get_all_categories;
@@ -19,6 +20,7 @@ pub fn router() -> Router<AppState> {
     .route("/", get(render_products_page))
     .route("/", post(create_product))
     .route("/new", get(render_new_product_page))
+    .route("/search", get(search_products))
 }
 
 
@@ -227,4 +229,54 @@ async fn create_product(
         }
 
     }
+}
+
+
+
+
+
+// ============================================================================
+// HANDLERS: LIVE SEARCH
+// ============================================================================
+pub async fn search_products(
+    State(state): State<AppState>,
+    Query(query): Query<ProductSearchQuery>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let q = query.q.trim();
+
+    // إرجاع استجابة فارغة فوراً إن كان الاستعلام خالياً
+    if q.is_empty() {
+        return Ok(ProductSearchResultsTemplate {
+            products: vec![],
+            query: String::new(),
+        });
+    }
+
+    // إعداد نمط البحث غير حساس للحالة (Case-Insensitive) للغتين العربية والإنجليزية
+    let search_pattern = format!("%{}%", q);
+
+let products = sqlx::query_as!(
+    ProductResponseDTO,
+    r#"
+    SELECT id, category_id, name_en, name_ar, notes, created_at, updated_at
+    FROM products
+    WHERE name_ar ILIKE $1 
+       OR regexp_replace(TRANSLATE(name_ar, 'أإآىة', 'ااايه'), '[\u064B-\u0652]', '', 'g') 
+          ILIKE regexp_replace(TRANSLATE($1, 'أإآىة', 'ااايه'), '[\u064B-\u0652]', '', 'g')
+    ORDER BY name_ar ASC
+    LIMIT 10
+    "#,
+    search_pattern
+)
+.fetch_all(&state.pool)
+.await
+.map_err(|err| {
+    tracing::error!("Failed to execute product search query: {:?}", err);
+    StatusCode::INTERNAL_SERVER_ERROR
+})?;
+
+    Ok(ProductSearchResultsTemplate {
+        products,
+        query: q.to_string(),
+    })
 }
