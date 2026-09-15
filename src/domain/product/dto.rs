@@ -92,7 +92,7 @@ pub struct FormErrors {
 
 impl FormErrors {
     pub fn has_errors(&self) -> bool {
-        self.name_ar.is_some() || self.name_en.is_some() || self.notes.is_some()
+        self.name_ar.is_some() || self.name_en.is_some() || self.notes.is_some() || self.category.is_some()
     }
 }
 
@@ -100,6 +100,7 @@ impl FormErrors {
 pub struct FormDTO {
     pub name_ar: String,
     pub name_en: String,
+    #[serde(default)]
     pub category: String,
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub notes: Option<String>,
@@ -114,44 +115,41 @@ impl FormDTO {
     }
 
     pub fn validate(&self, categories_list: &[SubCategoriesList]) -> Result<(), FormErrors> {
-        let mut errors = FormErrors::default();
+    let mut errors = FormErrors::default();
 
-        let name_ar = self.name_ar.trim();
-        if name_ar.is_empty() {
-            errors.name_ar = Some("لا يمكن ترك الاسم خاليا".to_string());
-            } else if name_ar.chars().count() > 100 {
-            errors.name_ar = Some("لا يمكن أن تتعدى خانة الاسم 100 حرف".to_string());
-        }
+    let name_ar = self.name_ar.trim();
+    if name_ar.is_empty() {
+        errors.name_ar = Some("لا يمكن ترك الاسم خالياً".to_string());
+    } else if name_ar.chars().count() > 100 {
+        errors.name_ar = Some("لا يمكن أن تتعدى خانة الاسم 100 حرف".to_string());
+    }
 
-        let name_en = self.name_en.trim();
-        if name_en.is_empty() {
-            errors.name_en = Some("Thid fild is not allowed to be empty".to_string());
-            } else if name_en.chars().count() > 100 {
-            errors.name_en =
-                Some("This filed is not allowed to be more than 100 character".to_string());
-        }
+    let name_en = self.name_en.trim();
+    if name_en.is_empty() {
+        errors.name_en = Some("This field is not allowed to be empty".to_string());
+    } else if name_en.chars().count() > 100 {
+        errors.name_en = Some("This field is not allowed to be more than 100 characters".to_string());
+    }
 
-       let category = self.category.trim();
+    let category = self.category.trim();
+    if category.is_empty() {
+        errors.category = Some("يرجى اختيار القسم".to_string());
+    } else if !categories_list.iter().any(|c| c.name_ar.trim() == category) {
+        errors.category = Some("القسم المختار غير موجود".to_string());
+    }
 
-if category.is_empty() {
-    errors.category = Some("القسم غير موجود".to_string());
-} else if !categories_list.iter().any(|c| c.name_ar == category) {
-    errors.category = Some("القسم المختار غير موجود".to_string());
-}
-        
-
-        if let Some(notes) = self.notes.as_deref() {
-            if notes.trim().chars().count() > 500 {
-                errors.notes = Some("لا يمكن أن يتعدى هذا الحقل 500 حرف".to_string());
-            }
-        }
-
-        if errors.has_errors() {
-            Err(errors)
-            } else {
-            Ok(())
+    if let Some(notes) = self.notes.as_deref() {
+        if notes.trim().chars().count() > 500 {
+            errors.notes = Some("لا يمكن أن يتعدى هذا الحقل 500 حرف".to_string());
         }
     }
+
+    if errors.has_errors() {
+        Err(errors)
+    } else {
+        Ok(())
+    }
+}
 }
 
 

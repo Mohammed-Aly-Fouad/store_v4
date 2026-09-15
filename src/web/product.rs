@@ -122,16 +122,16 @@ async fn render_products_page(
 async fn render_new_product_page(
     State(state): State<AppState>,
     Query(params): Query<FlashParams>,
-   ) -> Response {
-     let success_message = match params.action.as_deref() {
-        Some("created") => Some("تم إضافة المنتج الصنف بنجاح".to_string()),
+) -> Response {
+    let success_message = match params.action.as_deref() {
+        Some("created") => Some("تم إضافة الصنف بنجاح".to_string()),
         Some("updated") => Some("تم تعديل الصنف بنجاح".to_string()),
-        Some("deleteed") => Some("تم حذف الصنف بنجاح".to_string()),
+        Some("deleted") => Some("تم حذف الصنف بنجاح".to_string()),
         _ => None,
     };
 
     let error_message = match params.error.as_deref() {
-        Some("not_found")=> Some("غير موجود بقاعدة البيانات".to_string()),
+        Some("not_found") => Some("غير موجود بقاعدة البيانات".to_string()),
         Some("db_err") => Some("خطأ عام بقاعدة البيانات".to_string()),
         _ => None,
     };
@@ -141,93 +141,99 @@ async fn render_new_product_page(
             form: FormDTO::default(),
             categories_list,
             errors: None,
-            current_page: "categories".to_string(),
-            success_message: None,
-            error_message: None,
-        }.into_response(),
+            current_page: "products".to_string(),
+            success_message, // تم تمرير المتغير الصحيح
+            error_message,   // تم تمرير المتغير الصحيح
+        }
+        .into_response(),
 
-       Err(err) => CreateFormPage {
-    form: FormDTO::default(),
-    categories_list: vec![],
-    errors: None,
-    current_page: "categories".to_string(),
-    success_message: None,
-    error_message: Some(err.to_string()),
-}.into_response(),
+        Err(err) => CreateFormPage {
+            form: FormDTO::default(),
+            categories_list: vec![],
+            errors: None,
+            current_page: "products".to_string(),
+            success_message: None,
+            error_message: Some(format!("فشل تحميل الفئات: {}", err)),
+        }
+        .into_response(),
     }
-   }
+}
 
 async fn create_product(
     State(state): State<AppState>,
-    Query(params): Query<FlashParams>,
-    Form(mut form): Form<FormDTO>
+    Form(mut form): Form<FormDTO>,
 ) -> Response {
-    
     let categories_list = match get_sub_categories_list(&state).await {
-        Ok(categories_list) => categories_list,
+        Ok(list) => list,
         Err(err) => {
             tracing::error!("فشل جلب الفئات: {:#?}", err);
-            return Redirect::to("/web/products?error=server_error").into_response();
+            return Redirect::to("/web/products?error=db_err").into_response();
         }
     };
+
     form.sanitize();
-    match form.validate(&categories_list) {
-        Err(err) => {
-            tracing::error!("فشل التحقق من صحة النموذج: {:#?}", err);
-            return CreateFormPage {
-                categories_list,
+
+    if let Err(err) = form.validate(&categories_list) {
+        // tracing::error!("فشل التحقق من صحة النموذج: {:#?}", err);
+        tracing::error!(?err);
+        return CreateFormPage {
+            categories_list,
+            form,
+            errors: Some(err),
+            error_message: Some("من فضلك عدل الأخطاء لاستكمال التسجيل".to_string()),
+            success_message: None,
+            current_page: "products".to_string(),
+        }
+        .into_response();
+    }
+
+    let insert_result = sqlx::query!(
+        r#"
+        INSERT INTO products (category_id, name_en, name_ar, notes) 
+        VALUES (
+            (SELECT id FROM categories WHERE categories.name_ar = $1 LIMIT 1),
+            $2, $3, $4
+        )
+        "#,
+        &form.category,
+        &form.name_en,
+        &form.name_ar,
+        form.notes.as_deref(),
+    )
+    .execute(&state.pool)
+    .await;
+
+    match insert_result {
+        Ok(_) => Redirect::to("/web/products?action=created").into_response(),
+
+        // خطأ تكرار القيمة الفريدة (Unique Constraint Violation)
+        Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
+            let err_msg = format!("الصنف \"{}\" بالعربية أو بالإنجليزية مسجل بالفعل", form.name_ar);
+            CreateFormPage {
                 form,
-                errors: Some(err),
-                error_message: Some("من فضلك عدل الأخطاء لاستكمال التسجيل".to_string()),
+                categories_list,
+                error_message: Some(err_msg),
                 success_message: None,
+                errors: None,
                 current_page: "products".to_string(),
-
-
-            }.into_response();
-        }
-
-        Ok(_) => {
-            let insert_result = sqlx::query!(
-                r#"
-                INSERT INTO products (category_id, name_en, name_ar, notes) VALUES (
-                (SELECT id FROM categories WHERE categories.name_ar = $1 LIMIT 1),
-                 $2, $3, $4)
-                "#,
-                &form.category,
-                &form.name_en,
-                &form.name_ar,
-                form.notes.as_deref(),
-
-            ).execute(&state.pool)
-            .await;
-
-            match insert_result {
-                Ok(_) => Redirect::to("/web/products?action=created").into_response(),
-                Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
-                    let err_msg = format!("الفئة \"{}\" مسجلة بالفعل", form.name_ar);
-                    return CreateFormPage {
-                        form, categories_list,
-                        error_message: Some(err_msg),
-                        success_message: None,
-                        errors: None,
-                        current_page: "products".to_string(),
-                    }.into_response();
-                }
-
-                Err(err) => {
-                    tracing::error!("خطأ عام: {:#?}", err);
-                    tracing::info!(?form);
-                    return   CreateFormPage {
-                        form, categories_list,
-                        error_message: None,
-                        success_message: None,
-                        errors: None,
-                        current_page: "products".to_string(),
-                    }.into_response();
-                }
             }
+            .into_response()
         }
 
+
+        Err(err) => {
+            tracing::error!("خطأ أثناء حفظ الصنف: {:#?}", err);
+            CreateFormPage {
+                form,
+                categories_list,
+                error_message: Some("حدث خطأ غير متوقع أثناء الحفظ في قاعدة البيانات".to_string()),
+                success_message: None,
+                errors: None,
+                current_page: "products".to_string(),
+            }
+            .into_response()
+        }
+       
     }
 }
 
