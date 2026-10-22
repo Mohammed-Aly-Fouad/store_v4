@@ -171,13 +171,13 @@ pub struct CreateFormPage {
 #[derive(Template, WebTemplate)]
 #[template(path = "categories/edit_form.html")]
 pub struct EditFormPage {
+    pub id: i64,
     pub category_tree: Vec<CategoryTree>,
     pub form: CategoryFormDTO,
     pub errors: Option<CategoryFormErrors>,
     pub current_page: String,
     pub error_message: Option<String>,
     pub success_message: Option<String>,
-    pub id: i64,
 }
 
 

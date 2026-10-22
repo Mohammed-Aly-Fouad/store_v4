@@ -29,7 +29,7 @@ pub struct ProductResponseDTO {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct ProductWithCategoryDTO {
     pub id: i64,
     pub category_id: i64,
@@ -42,19 +42,7 @@ pub struct ProductWithCategoryDTO {
     pub parent_category_name_ar: Option<String>, // SQLx maps LEFT JOIN results to Option
 }
 
-
-#[derive(Template, WebTemplate)]
-#[template(path = "products/index.html")]
-pub struct ProductTemplate {
-    pub products: Vec<ProductWithCategoryDTO>,
-    pub error_message: Option<String>,
-    pub success_message: Option<String>,
-    pub current_page: String,
-}
-
-
-
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct SubCategoriesList {
     pub id: i64,
     pub parent_id: Option<i64>,
@@ -66,19 +54,6 @@ pub struct SubCategoriesList {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 
-}
-
-
-
-#[derive(Template, WebTemplate)]
-#[template(path = "products/create_form.html")]
-pub struct CreateFormPage {
-    pub categories_list: Vec<SubCategoriesList>,
-    pub form: FormDTO,
-    pub errors: Option<FormErrors>,
-    pub current_page: String,
-    pub error_message: Option<String>,
-    pub success_message: Option<String>
 }
 
 
@@ -151,6 +126,49 @@ impl FormDTO {
     }
 }
 }
+
+// ############ Templates ##################
+
+
+#[derive(Template, WebTemplate)]
+#[template(path = "products/index.html")]
+pub struct ProductTemplate {
+    pub products: Vec<ProductWithCategoryDTO>,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>,
+    pub current_page: String,
+}
+
+
+
+
+
+
+
+#[derive(Template, WebTemplate)]
+#[template(path = "products/create_form.html")]
+pub struct CreateFormPage {
+    pub categories_list: Vec<SubCategoriesList>,
+    pub form: FormDTO,
+    pub errors: Option<FormErrors>,
+    pub current_page: String,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>
+}
+#[derive(Template, WebTemplate)]
+#[template(path = "products/edit_form.html")]
+pub struct EditFormPage {
+    pub id: i64,
+    pub categories_list: Vec<SubCategoriesList>,
+    pub form: FormDTO,
+    pub errors: Option<FormErrors>,
+    pub current_page: String,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>
+}
+
+
+
 
 
 
