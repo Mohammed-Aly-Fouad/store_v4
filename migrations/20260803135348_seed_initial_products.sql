@@ -59,4 +59,4 @@ SELECT
   c.id AS category_id
 FROM product_seeds p
 JOIN categories c ON c.name_en LIKE p.category_name || '%'
-ON CONFLICT DO NOTHING;
+ON CONFLICT ((normalize_text(name_en))) DO NOTHING;

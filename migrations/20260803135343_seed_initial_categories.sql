@@ -88,4 +88,4 @@ INSERT INTO public.categories (name_en, name_ar, parent_id, notes) VALUES
 ('Party & Birthday Supplies', 'مستلزمات الحفلات وأعياد الميلاد', 
     (SELECT id FROM public.categories WHERE name_en = 'Toys, Games, Gifts & Party Supplies' AND parent_id IS NULL), 
     'Includes balloons, banners, party poppers, candles, and birthday decorations')
-ON CONFLICT DO NOTHING;
+ON CONFLICT ((normalize_text(name_en)), parent_id) DO NOTHING;

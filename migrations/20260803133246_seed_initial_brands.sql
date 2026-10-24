@@ -54,4 +54,4 @@ INSERT INTO public.brands (name_en, name_ar, notes) VALUES
 ('DIGITAL', 'ديجيتال', NULL),
 ('CHANYI', 'تشان يي', NULL),
 ('ROTRING', 'روترينج', NULL)
-ON CONFLICT ((lower(name_en::text))) DO NOTHING;
+ON CONFLICT ((normalize_text(name_en))) DO NOTHING;

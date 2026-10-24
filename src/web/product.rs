@@ -458,7 +458,7 @@ let products = sqlx::query_as!(
     r#"
     SELECT id, category_id, name_en, name_ar, notes, created_at, updated_at
     FROM products
-    WHERE name_ar ILIKE $1 
+    WHERE name_en ILIKE $1 
        OR regexp_replace(TRANSLATE(name_ar, 'أإآىة', 'ااايه'), '[\u064B-\u0652]', '', 'g') 
           ILIKE regexp_replace(TRANSLATE($1, 'أإآىة', 'ااايه'), '[\u064B-\u0652]', '', 'g')
     ORDER BY name_ar ASC

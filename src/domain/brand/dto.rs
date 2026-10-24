@@ -99,3 +99,29 @@ pub struct BrandsTemplate {
     pub current_page: String,
     
 }
+
+#[derive(Template, WebTemplate)]
+#[template(path = "brands/create_form.html")]
+pub struct CreateFormPage {
+    pub form: FormDTO,
+    pub errors: Option<FormErrors>,
+    pub current_page: String,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>
+
+}
+
+/// Partial HTML snippet template for HTMX/Dynamic live brand search.
+#[derive(Template, WebTemplate)]
+#[template(path = "brands/search_results.html")]
+pub struct BrandSearchResultsTemplate {
+    pub brands: Vec<BrandResponseDTO>,
+    pub query: String,
+}
+
+/// URL Query parameter extractor for category live-search requests.
+#[derive(Debug, Deserialize)]
+pub struct BrandSearchQuery {
+    #[serde(default)]
+    pub q: String,
+}
