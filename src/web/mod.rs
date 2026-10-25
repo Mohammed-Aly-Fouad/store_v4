@@ -2,6 +2,7 @@ pub mod category;
 pub mod home;
 pub mod product;
 pub mod brand;
+pub mod product_variants;
 
 use crate::{state::AppState};
 use axum::Router;
@@ -12,4 +13,5 @@ pub fn router() -> Router<AppState> {
         .nest("/categories", category::router())
         .nest("/products", product::router())
         .nest("/brands", brand::router())
+        .nest("/products_variants", product_variants::router())
 }
