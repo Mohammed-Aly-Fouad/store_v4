@@ -1,7 +1,7 @@
-use axum::{Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Response}, routing::get};
+use axum::{Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Response}, routing::get};
 use sqlx::encode::IsNull::No;
 
-use crate::{domain::{category::dto::FlashParams, home::dto::HomeTemplate, product_variants::dto::{ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
+use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductResponseDTO, product_variants::dto::{ProductListDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
 
 
 
@@ -14,6 +14,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
     .route("/", get(render_product_variants_page))
     .route("/search", get(search_variants))
+    .route("/new", get(render_new_variant_page))
 }
 
 
@@ -47,7 +48,72 @@ async fn fetch_all_product_variants(state: &AppState) -> Result<Vec<ProductVaria
     .await
 }
 
+async fn products_list(
+    state: &AppState,
+) -> Result<Vec<ProductListDTO>, sqlx::Error> {
+    let products = sqlx::query_as!(
+        ProductListDTO,
+        r#"
+        SELECT id, name_ar 
+        FROM products p 
+        ORDER BY p.id DESC
+        "#
+    )
+    .fetch_all(&state.pool)
+    .await?;
 
+    Ok(products)
+}
+
+async fn brands_list(
+    state: &AppState,
+) -> Result<Vec<BrandsListDTO>, sqlx::Error> {
+    let brands = sqlx::query_as!(
+        BrandsListDTO,
+        r#"
+        SELECT id, name_ar 
+        FROM brands p 
+        ORDER BY p.id DESC
+        "#
+    )
+    .fetch_all(&state.pool)
+    .await?;
+
+    Ok(brands)
+}
+async fn fetch_variant_by_id(
+    state: &AppState,
+    id: i64,
+) -> Option<ProductVariantsResponseDTO> {
+    sqlx::query_as!(
+        ProductVariantsResponseDTO,
+        r#"
+        SELECT 
+            pv.id,
+            p.name_ar AS product_name,
+            b.name_ar AS brand_name,
+            pv.name_ar, 
+            pv.name_en, 
+            pv.sku,
+            pv.barcode, 
+            pv.shelf_location, 
+            pv.stock_quantity, 
+            pv.reorder_threshold,
+            pv.is_active, 
+            pv.attr, 
+            pv.notes, 
+            pv.created_at, 
+            pv.updated_at 
+        FROM product_variants pv
+        JOIN products p ON pv.product_id = p.id
+        JOIN brands b ON pv.brand_id = b.id
+        WHERE pv.id = $1
+        "#,
+        id
+    ).fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None)
+}
 
 pub async fn render_product_variants_page(
     State(state): State<AppState>,
@@ -108,7 +174,27 @@ let success_message = match params.action.as_deref() {
     }
 }
 
+async fn render_new_variant_page(
+    State(state): State<AppState>,
+    Query(params): Query<FlashParams>,
+) -> Response {
+    let success_message = match params.action.as_deref() {
+        Some("created") => Some("تم إضافة الصنف بنجاح".to_string()),
+        Some("updated") => Some("تم تعديل الصنف بنجاح".to_string()),
+        Some("deleted") => Some("تم حذف الصنف بنجاح".to_string()),
+        _ => None,
+    };
 
+    let error_message = match params.error.as_deref() {
+        Some("not_found") => Some("غير موجود بقاعدة البيانات".to_string()),
+        Some("db_err") => Some("خطأ عام بقاعدة البيانات".to_string()),
+        _ => None,
+    };
+
+    let products = products_list(&state).await.unwrap_or_default();
+    let brands = brands_list(&state).await.unwrap_or_default();
+   Json(brands).into_response()
+}
 
 // ============================================================================
 // HANDLERS: LIVE SEARCH

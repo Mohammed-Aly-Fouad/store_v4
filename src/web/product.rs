@@ -61,6 +61,7 @@ async fn fetch_product_by_id(
 }
 
 
+
 pub async fn get_products_with_full_category(
     state: &AppState,
 ) -> Result<Vec<ProductWithCategoryDTO>, sqlx::Error> {

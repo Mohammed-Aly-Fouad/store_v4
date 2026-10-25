@@ -12,6 +12,11 @@ where
     Ok(opt.filter(|s| !s.trim().is_empty()))
 }
 
+#[derive(serde::Serialize, sqlx::FromRow)]
+pub struct BrandsListDTO {
+    pub id: i64,
+    pub name_ar: String,
+}
 //######################################################
 //######################################################
 #[derive(Debug, Serialize, FromRow, Clone, Deserialize)]
