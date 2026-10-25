@@ -111,6 +111,20 @@ pub struct CreateFormPage {
 
 }
 
+
+#[derive(Template, WebTemplate)]
+#[template(path = "brands/edit_form.html")]
+pub struct EditFormPage {
+    pub id: i64,
+    pub brand: Option<BrandResponseDTO>,
+    pub form: FormDTO,
+    pub errors: Option<FormErrors>,
+    pub current_page: String,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>,
+}
+
+
 /// Partial HTML snippet template for HTMX/Dynamic live brand search.
 #[derive(Template, WebTemplate)]
 #[template(path = "brands/search_results.html")]

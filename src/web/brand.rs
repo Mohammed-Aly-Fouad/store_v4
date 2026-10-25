@@ -1,21 +1,32 @@
-use axum::{Form, Json, Router, extract::{Path, Query, State}, http::StatusCode, response::{IntoResponse, Redirect, Response}, routing::{get, post}};
+use axum::{
+    Form, Json, Router,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Redirect, Response},
+    routing::{get, post},
+};
 use serde::Deserialize;
 
-use crate::{domain::brand::dto::{BrandResponseDTO, BrandSearchQuery, BrandSearchResultsTemplate, BrandsTemplate, CreateFormPage, FormDTO}, state::{self, AppState}};
+use crate::{
+    domain::brand::dto::{
+        BrandResponseDTO, BrandSearchQuery, BrandSearchResultsTemplate, BrandsTemplate,
+        CreateFormPage, EditFormPage, FormDTO,
+    },
+    state::{self, AppState},
+};
 
 pub fn router() -> Router<AppState> {
     Router::new()
-    .route("/", get(render_brands_page))
-    .route("/", post(create_brand))
-    .route("/new", get(render_new_brand_page))
-    // .route("/{id}/edit", get(render_edit_page))
-    // .route("/{id}/edit", post(edit_brand))
-    // .route("/{id}/delete", post(delete_brand))
-    .route("/search", get(search_brands))
+        .route("/", get(render_brands_page))
+        .route("/", post(create_brand))
+        .route("/new", get(render_new_brand_page))
+        .route("/{id}/edit", get(render_edit_page))
+        .route("/{id}/edit", post(edit_brand))
+        .route("/{id}/delete", post(delete_brand))
+        .route("/search", get(search_brands))
+}
 
-    }
-
-    async fn fetch_all_brands(state: &AppState) -> Vec<BrandResponseDTO> {
+async fn fetch_all_brands(state: &AppState) -> Vec<BrandResponseDTO> {
     sqlx::query_as!(
         BrandResponseDTO,
         r#"
@@ -28,10 +39,6 @@ pub fn router() -> Router<AppState> {
     .await
     .unwrap_or_default()
 }
-
-
-
-
 
 pub async fn render_brands_page(
     State(state): State<AppState>,
@@ -74,9 +81,9 @@ pub async fn search_brands(
     // إعداد نمط البحث غير حساس للحالة (Case-Insensitive) للغتين العربية والإنجليزية
     let search_pattern = format!("%{}%", q);
 
-let brands = sqlx::query_as!(
-    BrandResponseDTO,
-    r#"
+    let brands = sqlx::query_as!(
+        BrandResponseDTO,
+        r#"
     SELECT id, name_en, name_ar, notes, created_at, updated_at
     FROM brands
     WHERE name_en ILIKE $1 
@@ -85,14 +92,14 @@ let brands = sqlx::query_as!(
     ORDER BY name_ar ASC
     LIMIT 10
     "#,
-    search_pattern
-)
-.fetch_all(&state.pool)
-.await
-.map_err(|err| {
-    tracing::error!("Failed to execute brand search query: {:?}", err);
-    StatusCode::INTERNAL_SERVER_ERROR
-})?;
+        search_pattern
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to execute brand search query: {:?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(BrandSearchResultsTemplate {
         brands,
@@ -100,8 +107,7 @@ let brands = sqlx::query_as!(
     })
 }
 
-async fn render_new_brand_page(
-) -> impl IntoResponse {
+async fn render_new_brand_page() -> impl IntoResponse {
     CreateFormPage {
         form: FormDTO::default(),
         errors: None,
@@ -118,19 +124,20 @@ async fn create_brand(
 ) -> impl IntoResponse {
     form.sanitize();
 
-   match form.validate() {
-       Err(err) => {
-        return CreateFormPage {
-            form,
-             error_message: Some("من فضلك عدل الأخطاء لاستكمال التسجيل".to_string()),
+    match form.validate() {
+        Err(err) => {
+            return CreateFormPage {
+                form,
+                error_message: Some("من فضلك عدل الأخطاء لاستكمال التسجيل".to_string()),
                 success_message: None,
                 errors: Some(err),
                 current_page: "brands".to_string(),
-        }.into_response();
-       }
+            }
+            .into_response();
+        }
 
-       Ok(_) => {
-        let insert_result = sqlx::query!(
+        Ok(_) => {
+            let insert_result = sqlx::query!(
                 r#"
                 INSERT INTO brands (name_en, name_ar, notes)
                 VALUES (
@@ -146,7 +153,7 @@ async fn create_brand(
             .execute(&state.pool)
             .await;
 
-        match insert_result {
+            match insert_result {
                 Ok(_) => Redirect::to("/web/brands?action=created").into_response(),
                 Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
                     let err_msg = format!("الماركة \"{}\" مسجلة بالفعل", form.name_ar);
@@ -171,9 +178,124 @@ async fn create_brand(
                     .into_response();
                 }
             }
-       }
-   }
+        }
+    }
 }
+
+pub async fn render_edit_page(State(state): State<AppState>, Path(id): Path<i64>) -> Response {
+    let brand = sqlx::query_as!(
+        BrandResponseDTO,
+        r#"SELECT id, name_en, name_ar, notes, created_at, updated_at FROM brands WHERE id = $1"#,
+        id
+    )
+    .fetch_optional(&state.pool)
+    .await;
+
+    match brand {
+        Ok(Some(b)) => {
+            let form = FormDTO {
+                name_en: b.name_en.clone(),
+                name_ar: b.name_ar.clone(),
+                notes: b.notes.clone(),
+            };
+            EditFormPage {
+                id,
+                brand: Some(b),
+                form,
+                errors: None,
+                current_page: "brand".to_string(),
+                error_message: None,
+                success_message: None,
+            }
+            .into_response()
+        }
+        Ok(None) => Redirect::to("/web/brands?error=not_found").into_response(),
+        Err(_) => Redirect::to("/web/brands?error=db_error").into_response(),
+    }
+}
+
+async fn edit_brand(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Form(mut form): Form<FormDTO>,
+) -> Response {
+    form.sanitize();
+
+    match form.validate() {
+        Err(err) => {
+            return CreateFormPage {
+                form,
+                error_message: Some("من فضلك عدل الأخطاء لاستكمال التسجيل".to_string()),
+                success_message: None,
+                errors: Some(err),
+                current_page: "brands".to_string(),
+            }
+            .into_response();
+        }
+
+        Ok(_) => {
+             let insert_result = sqlx::query!(
+        r#"UPDATE brands SET name_en = $1, name_ar = $2, notes = $3 WHERE id = $4"#,
+        form.name_en,
+        form.name_ar,
+        form.notes,
+        id
+    )
+    .execute(&state.pool)
+    .await;
+
+            match insert_result {
+                Ok(_) => Redirect::to("/web/brands?action=updated").into_response(),
+                Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
+                    let err_msg = format!("الماركة \"{}\" مسجلة بالفعل", form.name_ar);
+                    return CreateFormPage {
+                        form,
+                        error_message: Some(err_msg),
+                        success_message: None,
+                        errors: None,
+                        current_page: "brands".to_string(),
+                    }
+                    .into_response();
+                }
+                Err(err) => {
+                    tracing::error!("خطأ عام: {:#?}", err);
+                    return CreateFormPage {
+                        form,
+                        error_message: None,
+                        success_message: None,
+                        errors: None,
+                        current_page: "brands".to_string(),
+                    }
+                    .into_response();
+                }
+            }
+        }
+    }
+}
+
+
+async fn delete_brand(
+    State(state): State<AppState>,
+    Path(id): Path<i64>
+) -> Response {
+    let delete_result = sqlx::query!(r#"DELETE FROM brands WHERE id = $1"#, id)
+    .execute(&state.pool)
+    .await;
+
+    match delete_result {
+        Ok(_) => {
+            Redirect::to("/web/brands?action=deleted").into_response()
+        }
+        Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23503") => {
+            Redirect::to("/web/brands?error=has_children").into_response()
+        }
+        Err(err) => {
+            tracing::error!("Error deleting brand {}: {:?}", id, err);
+            Redirect::to("/web/brands/?error=delete_failed").into_response()
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 4.1 Custom Askama Filters
 // ---------------------------------------------------------------------------
@@ -205,7 +327,6 @@ pub mod filters {
     }
 }
 
-
 // ============================================================================
 // FLASH MESSAGES & QUERY PARAMS
 // ============================================================================
@@ -215,5 +336,5 @@ pub mod filters {
 #[derive(Debug, Deserialize)]
 pub struct FlashParams {
     pub action: Option<String>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
