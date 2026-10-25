@@ -13,5 +13,5 @@ pub fn router() -> Router<AppState> {
         .nest("/categories", category::router())
         .nest("/products", product::router())
         .nest("/brands", brand::router())
-        .nest("/products_variants", product_variants::router())
+        .nest("/product_variants", product_variants::router())
 }

@@ -1,7 +1,7 @@
 use axum::{Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Response}, routing::get};
 use sqlx::encode::IsNull::No;
 
-use crate::{domain::{category::dto::FlashParams, home::dto::HomeTemplate, product_variants::dto::{ProductVariantResponseDTO, ProductVariantTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
+use crate::{domain::{category::dto::FlashParams, home::dto::HomeTemplate, product_variants::dto::{ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
 
 
 
@@ -17,13 +17,33 @@ pub fn router() -> Router<AppState> {
 }
 
 
-async fn fetch_all_product_variants(state: &AppState) -> Result<Vec<ProductVariantResponseDTO>, sqlx::Error> {
+async fn fetch_all_product_variants(state: &AppState) -> Result<Vec<ProductVariantsResponseDTO>, sqlx::Error> {
     sqlx::query_as!(
-        ProductVariantResponseDTO,
+        ProductVariantsResponseDTO,
         r#"
-        SELECT id, product_id, brand_id, name_ar, name_en, sku, barcode, shelf_location, stock_quantity, reorder_threshold, is_active, attr, notes, created_at, updated_at FROM product_variants ORDER BY id DESC
+        SELECT 
+            pv.id,
+            p.name_ar AS product_name,
+            b.name_ar AS brand_name,
+            pv.name_ar, 
+            pv.name_en, 
+            pv.sku,
+            pv.barcode, 
+            pv.shelf_location, 
+            pv.stock_quantity, 
+            pv.reorder_threshold,
+            pv.is_active, 
+            pv.attr, 
+            pv.notes, 
+            pv.created_at, 
+            pv.updated_at 
+        FROM product_variants pv
+        JOIN products p ON pv.product_id = p.id
+        JOIN brands b ON pv.brand_id = b.id
+        ORDER BY pv.id DESC
         "#
-    ).fetch_all(&state.pool)
+    )
+    .fetch_all(&state.pool)
     .await
 }
 
@@ -51,11 +71,11 @@ let success_message = match params.action.as_deref() {
     };
 
     match fetch_all_product_variants(&state).await {
-        Ok(products_variants) => ProductVariantTemplate {
-            products_variants,
+        Ok(product_variants) => ProductVariantsTemplate {
+            product_variants,
             error_message,
             success_message,
-            current_page: "products_variants".to_string(),
+            current_page: "product_variants".to_string(),
 
         }.into_response(),
 
@@ -111,18 +131,36 @@ pub async fn search_variants(
     let search_pattern = format!("%{}%", q);
 
 let variants = sqlx::query_as!(
-    ProductVariantResponseDTO,
+    ProductVariantsResponseDTO,
     r#"
-    SELECT id, product_id, brand_id, name_en, name_ar, sku, barcode, shelf_location, stock_quantity, reorder_threshold, is_active, attr, notes, created_at, updated_at
-    FROM product_variants
-    WHERE name_en ILIKE $1 
-       OR regexp_replace(TRANSLATE(name_ar, 'أإآىة', 'ااايه'), '[\u064B-\u0652]', '', 'g') 
-          ILIKE regexp_replace(TRANSLATE($1, 'أإآىة', 'ااايه'), '[\u064B-\u0652]', '', 'g')
-    ORDER BY name_ar ASC
+    SELECT 
+        pv.id,
+        p.name_ar AS product_name,
+        b.name_ar AS brand_name,
+        pv.name_en, 
+        pv.name_ar, 
+        pv.sku, 
+        pv.barcode,
+        pv.shelf_location, 
+        pv.stock_quantity, 
+        pv.reorder_threshold, 
+        pv.is_active,
+        pv.attr, 
+        pv.notes, 
+        pv.created_at, 
+        pv.updated_at
+    FROM product_variants pv
+    JOIN products p ON pv.product_id = p.id
+    JOIN brands b ON pv.brand_id = b.id
+    WHERE pv.name_en ILIKE $1 
+       OR regexp_replace(TRANSLATE(pv.name_ar, ' أإآة', ' أأآه'), '[\u064B-\u0652]', '', 'g') 
+          ILIKE regexp_replace(TRANSLATE($1, ' أإآة', ' أأآه'), '[\u064B-\u0652]', '', 'g')
+    ORDER BY pv.name_ar ASC
     LIMIT 10
     "#,
     search_pattern
 )
+
 .fetch_all(&state.pool)
 .await
 .map_err(|err| {

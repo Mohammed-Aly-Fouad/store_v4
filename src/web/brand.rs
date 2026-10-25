@@ -53,6 +53,7 @@ pub async fn render_brands_page(
 
     let error_message = match params.error.as_deref() {
         Some("not_found") => Some("غير موجود بقاعدة البيانات".to_string()),
+        Some("delete_failed") => Some("لا يمكن محو هذا السجل".to_string()),
         Some("db_error") => Some("خطأ عام بقاعدة البيانات".to_string()),
         _ => None,
     };
@@ -234,15 +235,15 @@ async fn edit_brand(
         }
 
         Ok(_) => {
-             let insert_result = sqlx::query!(
-        r#"UPDATE brands SET name_en = $1, name_ar = $2, notes = $3 WHERE id = $4"#,
-        form.name_en,
-        form.name_ar,
-        form.notes,
-        id
-    )
-    .execute(&state.pool)
-    .await;
+            let insert_result = sqlx::query!(
+                r#"UPDATE brands SET name_en = $1, name_ar = $2, notes = $3 WHERE id = $4"#,
+                form.name_en,
+                form.name_ar,
+                form.notes,
+                id
+            )
+            .execute(&state.pool)
+            .await;
 
             match insert_result {
                 Ok(_) => Redirect::to("/web/brands?action=updated").into_response(),
@@ -273,25 +274,19 @@ async fn edit_brand(
     }
 }
 
-
-async fn delete_brand(
-    State(state): State<AppState>,
-    Path(id): Path<i64>
-) -> Response {
+async fn delete_brand(State(state): State<AppState>, Path(id): Path<i64>) -> Response {
     let delete_result = sqlx::query!(r#"DELETE FROM brands WHERE id = $1"#, id)
-    .execute(&state.pool)
-    .await;
+        .execute(&state.pool)
+        .await;
 
     match delete_result {
-        Ok(_) => {
-            Redirect::to("/web/brands?action=deleted").into_response()
-        }
+        Ok(_) => Redirect::to("/web/brands?action=deleted").into_response(),
         Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23503") => {
             Redirect::to("/web/brands?error=has_children").into_response()
         }
         Err(err) => {
             tracing::error!("Error deleting brand {}: {:?}", id, err);
-            Redirect::to("/web/brands/?error=delete_failed").into_response()
+            Redirect::to("/web/brands?error=delete_failed").into_response()
         }
     }
 }

@@ -32,7 +32,7 @@
         </div>
         <div class=" search-container header__search">
             <input type="search" name="q" class="header__search-input" placeholder="بحث عن متغير ..." autocomplete="off"
-                hx-get="/web/products_variants/search" hx-trigger="keyup changed delay:300ms, search"
+                hx-get="/web/product_variants/search" hx-trigger="keyup changed delay:300ms, search"
                 hx-target="#search-results-dropdown">
             <div id="search-results-dropdown" class="search-dropdown"></div>
         </div>
@@ -71,11 +71,11 @@
                         الماركات</a>
 
                 </li>
-            </ul>
+        
             <li class="nav__item">
 
-                <a href="/web/products_variants" class="nav__link 
-                                         {% if current_page == "products_variants" %} nav__link--active {% endif
+                <a href="/web/product_variants" class="nav__link 
+                                         {% if current_page == "product_variants" %} nav__link--active {% endif
                     %}">إدارة متغيرات الأصناف</a>
 
             </li>
@@ -89,12 +89,12 @@
         <section class="collection">
             <div class="collection__info">
                 <h2 class="collection__title">الماركات</h2>
-                <span class="collection__counter">({{ products_variants.len() }})</span>
+                <span class="collection__counter">({{ product_variants.len() }})</span>
             </div>
 
             <!--###### collection grid (cards grid )  ####### -->
             <div class="collection-grid">
-                {% for variant in products_variants %}
+                {% for variant in product_variants %}
                 <article class="card">
                     <header class="card__header">
                         <h3 class="card__title" title="{{variant.id}}">{{ variant.name_ar }}</h3>
@@ -105,19 +105,61 @@
                         {{notes}}
                         {% endif %}
                     </div>
+                    <p>product name : {{variant.product_name}}</p>
+                    <p>Brand name : {{variant.brand_name}}</p>
+                    <p>Arabic Name: {{variant.name_ar}}</p>
+                    <p>English Name: {{variant.name_en}}</p>
+                    <p>SKU: {{variant.sku}}</p>
+                <p>
+                    Barcode:
+                    {% match variant.barcode %}
+                    {% when Some(bc) %}{{ bc }}
+                    {% when None %}N/A
+                    {% endmatch %}
+                </p>
+                
+                <p>
+                    Shelf Location:
+                    {% match variant.shelf_location %}
+                    {% when Some(loc) %}{{ loc }}
+                    {% when None %}N/A
+                    {% endmatch %}
+                </p>
+                    <p>Stock Quantity: {{variant.stock_quantity}}</p>
+                    <p>Reorder Threshold: {{variant.reorder_threshold}}</p>
+                    <p>Is Active: {{variant.is_active}}</p>
+                    {% let attrs = variant.attr_pairs() %}
+                    {% if attrs.is_empty() %}
+                    <p>الخصائص: N/A</p>
+                    {% else %}
+                    <ul class="card__attrs">
+                        {% for (key, value) in attrs %}
+                        <li><strong>{{ key }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    <p>
+                        Notes:
+                        {% match variant.notes %}
+                        {% when Some(notes) %}{{ notes }}
+                        {% when None %}N/A
+                        {% endmatch %}
+                    </p>
+                                        <p>{{ variant.created_at.format(" %Y-%m-%d") }}</p>
+
                     <footer class="card__footer">
                         <time datetime="{{ variant.created_at.format(" %Y-%m-%d") }}" class="card__date">
                             {{ variant.created_at.format("%Y-%m-%d") }}
                         </time>
                         <div class="card__actions">
-                            <a href="/web/products_variants/{{ variant.id }}/edit" class="btn btn--sm btn--text">تعديل</a>
+                            <a href="/web/product_variants/{{ variant.id }}/edit" class="btn btn--sm btn--text">تعديل</a>
             
             
             
             
             
             
-                            <form action="/web/products_variants/{{ variant.id }}/delete" method="POST" class="inline-form delete-form">
+                            <form action="/web/product_variants/{{ variant.id }}/delete" method="POST" class="inline-form delete-form">
                                 <button type="submit" class="btn btn--sm btn--danger-text">حذف</button>
                             </form>
             

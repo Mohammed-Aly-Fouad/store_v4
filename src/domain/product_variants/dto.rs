@@ -6,10 +6,10 @@ use serde_json::Value;
 use sqlx::FromRow;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct ProductVariantResponseDTO {
+pub struct ProductVariantsResponseDTO {
     pub id: i64,
-    pub product_id: i64,
-    pub brand_id: i64,
+    pub product_name: String,
+    pub brand_name: String,
     pub name_ar: String,
     pub name_en: String,
     pub sku: String,
@@ -18,17 +18,35 @@ pub struct ProductVariantResponseDTO {
     pub stock_quantity: i32,
     pub reorder_threshold: i32,
     pub is_active: bool,
-    pub attr: Value,
+    pub attr: sqlx::types::Json<serde_json::Value>, // or your specific Value type
     pub notes: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl ProductVariantsResponseDTO {
+    /// يحوّل attr (JSON object) إلى أزواج (المفتاح، القيمة) للعرض في القالب
+    pub fn attr_pairs(&self) -> Vec<(String, String)> {
+        match &self.attr.0 {
+            serde_json::Value::Object(map) => map
+                .iter()
+                .map(|(k, v)| {
+                    let val = match v {
+                        serde_json::Value::String(s) => s.clone(),
+                        other => other.to_string(),
+                    };
+                    (k.clone(), val)
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+}
 // ############ Templates ##################
 #[derive(Template, WebTemplate)]
 #[template(path = "product_variants/index.html")]
-pub struct ProductVariantTemplate {
-    pub products_variants: Vec<ProductVariantResponseDTO>,
+pub struct ProductVariantsTemplate {
+    pub product_variants: Vec<ProductVariantsResponseDTO>,
    pub error_message: Option<String>,
    pub success_message: Option<String>,
    pub current_page: String,
@@ -83,7 +101,7 @@ pub struct FlashParams {
 #[derive(Template, WebTemplate)]
 #[template(path = "product_variants/search_results.html")]
 pub struct VariantSearchResultsTemplate {
-    pub variants: Vec<ProductVariantResponseDTO>,
+    pub variants: Vec<ProductVariantsResponseDTO>,
     pub query: String,
 }
 
