@@ -76,6 +76,7 @@ impl FormErrors {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(default)]
 pub struct FormDTO {
     pub product_name: String,
     pub brand_name: String,

@@ -1,4 +1,4 @@
-use axum::{Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Redirect, Response}, routing::get};
+use axum::{Form, Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Redirect, Response}, routing::{get, post}};
 use sqlx::encode::IsNull::No;
 
 use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductListDTO, product_variants::dto::{CreateFormPage, FormDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
@@ -15,6 +15,7 @@ pub fn router() -> Router<AppState> {
     .route("/", get(render_product_variants_page))
     .route("/search", get(search_variants))
     .route("/new", get(render_new_variant_page))
+    .route("/", post(create_variant))
 }
 
 
@@ -205,6 +206,17 @@ async fn render_new_variant_page(
         error_message,
         current_page: "product_variants".to_string()
     }.into_response()
+}
+
+
+async fn create_variant(
+    State(state): State<AppState>,
+    Query(params): Query<FlashParams>,
+    Form(mut form): Form<FormDTO>
+) -> Response {
+
+    Json(form).into_response()
+    // "بسم الله الرحمن الرحيم".into_response()
 }
 
 // ============================================================================
