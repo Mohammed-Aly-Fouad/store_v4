@@ -39,9 +39,6 @@ CREATE TABLE public.product_variants
     brand_id           bigint NOT NULL,
     name_ar            character varying(255) NOT NULL,
     name_en            character varying(255) NOT NULL,
-    sku                character varying(100) NOT NULL,
-    barcode            character varying(100),
-    shelf_location     character varying(100),
     stock_quantity     integer NOT NULL DEFAULT 0,
     reorder_threshold  integer NOT NULL DEFAULT 0,
     is_active          boolean NOT NULL DEFAULT true,
@@ -65,9 +62,7 @@ CREATE TABLE public.product_variants
 
     -- منع القيم الفارغة أو المسافات فقط
     CONSTRAINT product_variants_name_en_not_blank CHECK (btrim(name_en) <> ''),
-    CONSTRAINT product_variants_name_ar_not_blank CHECK (btrim(name_ar) <> ''),
-    CONSTRAINT product_variants_sku_not_blank CHECK (btrim(sku) <> ''),
-    CONSTRAINT product_variants_barcode_not_blank CHECK (barcode IS NULL OR btrim(barcode) <> '')
+    CONSTRAINT product_variants_name_ar_not_blank CHECK (btrim(name_ar) <> '')
 );
 
 ALTER TABLE IF EXISTS public.product_variants OWNER TO mohammed;
@@ -85,15 +80,6 @@ CREATE INDEX idx_product_variants_brand_id
 -- ========================================================
 -- 3. Unique Indexes (بعد التطبيع)
 -- ========================================================
-
--- SKU فريد (حروف كبيرة/صغيرة ومسافات لا تفرق)
-CREATE UNIQUE INDEX idx_product_variants_unique_sku
-    ON public.product_variants (normalize_text(sku));
-
--- الباركود فريد عند وجوده
-CREATE UNIQUE INDEX idx_product_variants_unique_barcode
-    ON public.product_variants (btrim(barcode))
-    WHERE barcode IS NOT NULL;
 
 -- الاسم الإنجليزي فريد داخل نفس المنتج
 CREATE UNIQUE INDEX idx_product_variants_unique_name_en_product

@@ -82,29 +82,72 @@
     </aside>
     <!--############ main Form ############## -->
     <main class="page-layout__main">
-        <form method="post" action="/web/brands">
+        <form method="post" action="/web/product_variants">
         <div class="field">
-            <label for="product_name">اسم المنتج</label>
-            <input type="text" id="product_name" name="product_name" placeholder="e.g. قلم جاف" value="{{ form.product_name }}">
+            <label for="product_name">اختر منتج</label>
+        
+            <select id="product_name" name="product_name">
+                <option value="" disabled selected>
+                    اختر ماركة من ضمن القائمة
+                </option>
+                {% for product in products %}
+                {% let is_selected = form.product_name == product.name_ar %}
+                <option value="{{product.name_ar}}" {% if is_selected %} selected {% endif %}>
+                    {{product.name_ar}}
+                </option>
+                {% endfor%}
+        
+        
+            </select>
             {% if let Some(errs) = errors %}
-            {% if let Some(err) = errs.product_name %}
+            {% if let Some(err) = errs.brand_name %}
             <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
                 {{ err }}
             </span>
             {% endif %}
             {% endif %}
         </div>
+    <div class="field">
+        <label for="brand_name">اختر ماركة</label>
+    
+        <select id="brand_name" name="brand_name">
+            <option value="" disabled selected>
+                اختر ماركة من ضمن القائمة
+            </option>
+            {% for brand in brands %}
+            {% let is_selected = form.brand_name == brand.name_ar %}
+            <option value="{{brand.name_ar}}" {% if is_selected %} selected {% endif %}>
+                {{brand.name_ar}}
+            </option>
+            {% endfor%}
+    
+    
+        </select>
+        {% if let Some(errs) = errors %}
+        {% if let Some(err) = errs.brand_name %}
+        <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+            {{ err }}
+        </span>
+        {% endif %}
+        {% endif %}
+    </div>
        
-            <div class="field">
-                <label for="brand_name">الماركة</label>
-                <input type="text" id="brand_name" name="brand_name" placeholder="e.g. ROTRING" value="{{ form.brand_name }}">
-                {% if let Some(errs) = errors %}
-                {% if let Some(err) = errs.brand_name %}
-                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
-                    {{ err }}
-                </span>
-                {% endif %}
-                {% endif %}
+            <div class="field" style="margin-top: 1.5rem;">
+                <label>المميزات / الخصائص (Attributes)</label>
+                <div id="attributes-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+                    {% for (key, val) in form.attr_pairs() %}
+                    <div class="attr-row" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" name="attr_keys[]" value="{{ key }}" placeholder="الخاصية (Key e.g. color)"
+                            style="flex: 1;">
+                        <input type="text" name="attr_values[]" value="{{ val }}" placeholder="القيمة (Value e.g. red)"
+                            style="flex: 1;">
+                        <button type="button" onclick="this.parentElement.remove()"
+                            style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">✕</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" onclick="addAttrRow()" style="margin-top: 10px; padding: 6px 12px; cursor: pointer;">+ إضافة
+                    خاصية</button>
             </div>
             <div class="field">
                 <label for="name_ar">الاسم بالعربية</label>
@@ -128,41 +171,7 @@
                 {% endif %}
                 {% endif %}
             </div>
-            <div class="field">
-                <label for="name_en">sku</label>
-                <input type="text" id="sku" name="sku" placeholder="e.g. ROTRING" value="{{ form.sku }}">
-                {% if let Some(errs) = errors %}
-                {% if let Some(err) = errs.sku %}
-                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
-                    {{ err }}
-                </span>
-                {% endif %}
-                {% endif %}
-            </div>
-            <div class="field">
-                <label for="barcode">barcode</label>
-            <input type="text" id="barcode" name="barcode" placeholder="e.g. ROTRING"
-                value="{{ form.barcode.as_deref().unwrap_or("") }}">
-                {% if let Some(errs) = errors %}
-                {% if let Some(err) = errs.barcode %}
-                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
-                    {{ err }}
-                </span>
-                {% endif %}
-                {% endif %}
-            </div>
-        <div class="field">
-            <label for="shelf_location">shelf_location</label>
-            <input type="text" id="shelf_location" name="shelf_location" placeholder="e.g. ROTRING"
-                value="{{ form.shelf_location.as_deref().unwrap_or("") }}">
-            {% if let Some(errs) = errors %}
-            {% if let Some(err) = errs.shelf_location %}
-            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
-                {{ err }}
-            </span>
-            {% endif %}
-            {% endif %}
-        </div>
+            
         <div class="field">
             <label for="stock_quantity">الكمية المتاحة</label>
             <input type="text" id="stock_quantity" name="stock_quantity" placeholder="e.g. ROTRING" value="{{ form.stock_quantity }}">
@@ -200,23 +209,7 @@
         </div>
        
 
-<div class="field" style="margin-top: 1.5rem;">
-    <label>المميزات / الخصائص (Attributes)</label>
-    <div id="attributes-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
-        {% for (key, val) in form.attr_pairs() %}
-        <div class="attr-row" style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" name="attr_keys[]" value="{{ key }}" placeholder="الخاصية (Key e.g. color)"
-                style="flex: 1;">
-            <input type="text" name="attr_values[]" value="{{ val }}" placeholder="القيمة (Value e.g. red)"
-                style="flex: 1;">
-            <button type="button" onclick="this.parentElement.remove()"
-                style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">✕</button>
-        </div>
-        {% endfor %}
-    </div>
-    <button type="button" onclick="addAttrRow()" style="margin-top: 10px; padding: 6px 12px; cursor: pointer;">+ إضافة
-        خاصية</button>
-</div>
+
             <!-- الملاحظات -->
             <div class="field" style="margin-top: 1rem;">
                 <label for="notes">ملاحظات (اختياري)</label>

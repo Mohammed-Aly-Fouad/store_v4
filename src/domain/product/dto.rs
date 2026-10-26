@@ -127,6 +127,11 @@ impl FormDTO {
 }
 }
 
+#[derive(serde::Serialize, sqlx::FromRow)]
+pub struct ProductListDTO {
+    pub id: i64,
+    pub name_ar: String,
+}
 // ############ Templates ##################
 
 

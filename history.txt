@@ -1,0 +1,119 @@
+pub struct ProductVariantsResponseDTO {
+    pub id: i64,
+    pub product_name: String,
+    pub brand_name: String,
+    pub name_ar: String,
+    pub name_en: String,
+    pub sku: String,
+    pub barcode: Option<String>,
+    pub shelf_location: Option<String>,
+    pub stock_quantity: i32,
+    pub reorder_threshold: i32,
+    pub is_active: bool,
+    pub attr: sqlx::types::Json<serde_json::Value>, // or your specific Value type
+    pub notes: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+ pub sku: String,
+    pub barcode: Option<String>,
+    pub shelf_location: Option<String>,
+
+
+
+    <div class="field">
+                <label for="name_en">sku</label>
+                <input type="text" id="sku" name="sku" placeholder="e.g. ROTRING" value="{{ form.sku }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.sku %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="field">
+                <label for="barcode">barcode</label>
+            <input type="text" id="barcode" name="barcode" placeholder="e.g. ROTRING"
+                value="{{ form.barcode.as_deref().unwrap_or("") }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.barcode %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+        <div class="field">
+            <label for="shelf_location">shelf_location</label>
+            <input type="text" id="shelf_location" name="shelf_location" placeholder="e.g. ROTRING"
+                value="{{ form.shelf_location.as_deref().unwrap_or("") }}">
+            {% if let Some(errs) = errors %}
+            {% if let Some(err) = errs.shelf_location %}
+            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                {{ err }}
+            </span>
+            {% endif %}
+            {% endif %}
+        </div>
+
+
+
+        form errors
+           pub sku: Option<String>,
+    pub barcode: Option<String>,
+    pub shelf_location: Option<String>,
+
+
+    impl form errors
+      || self.sku.is_some()
+            || self.barcode.is_some()
+            || self.shelf_location.is_some()
+
+
+            form dto
+               pub sku: String,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub barcode: Option<String>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub shelf_location: Option<String>,
+
+    impl form dto
+      self.sku = self.sku.trim().to_string();
+        self.barcode = self
+            .barcode
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(ToString::to_string);
+        self.shelf_location = self
+            .shelf_location
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(ToString::to_string);
+
+            impl default for FormDTO
+               sku: String::new(),
+            barcode: None,
+            shelf_location: None,
+
+
+            index.html
+             <p>SKU: {{variant.sku}}</p>
+                <p>
+                    Barcode:
+                    {% match variant.barcode %}
+                    {% when Some(bc) %}{{ bc }}
+                    {% when None %}N/A
+                    {% endmatch %}
+                </p>
+                
+                <p>
+                    Shelf Location:
+                    {% match variant.shelf_location %}
+                    {% when Some(loc) %}{{ loc }}
+                    {% when None %}N/A
+                    {% endmatch %}
+                </p>

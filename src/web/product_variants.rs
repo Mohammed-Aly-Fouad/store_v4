@@ -1,7 +1,7 @@
-use axum::{Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Response}, routing::get};
+use axum::{Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Redirect, Response}, routing::get};
 use sqlx::encode::IsNull::No;
 
-use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductResponseDTO, product_variants::dto::{CreateFormPage, FormDTO, ProductListDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
+use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductListDTO, product_variants::dto::{CreateFormPage, FormDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
 
 
 
@@ -28,9 +28,6 @@ async fn fetch_all_product_variants(state: &AppState) -> Result<Vec<ProductVaria
             b.name_ar AS brand_name,
             pv.name_ar, 
             pv.name_en, 
-            pv.sku,
-            pv.barcode, 
-            pv.shelf_location, 
             pv.stock_quantity, 
             pv.reorder_threshold,
             pv.is_active, 
@@ -94,9 +91,6 @@ async fn fetch_variant_by_id(
             b.name_ar AS brand_name,
             pv.name_ar, 
             pv.name_en, 
-            pv.sku,
-            pv.barcode, 
-            pv.shelf_location, 
             pv.stock_quantity, 
             pv.reorder_threshold,
             pv.is_active, 
@@ -188,11 +182,19 @@ async fn render_new_variant_page(
     let error_message = match params.error.as_deref() {
         Some("not_found") => Some("غير موجود بقاعدة البيانات".to_string()),
         Some("db_err") => Some("خطأ عام بقاعدة البيانات".to_string()),
+        Some("can_not_get") => Some("تعذر جلب البيانات الأساسية".to_string()),
         _ => None,
     };
 
-    let products = products_list(&state).await.unwrap_or_default();
-    let brands = brands_list(&state).await.unwrap_or_default();
+   let products = match products_list(&state).await {
+        Ok(p) => p,
+        Err(_) => return Redirect::to("/web/product_variants?error=can_not_get").into_response(),
+    };
+
+    let brands = match brands_list(&state).await {
+        Ok(b) => b,
+        Err(_) => return Redirect::to("/web/product_variants?error=can_not_get").into_response(),
+    };
     
     CreateFormPage {
         products,
@@ -234,9 +236,6 @@ let variants = sqlx::query_as!(
         b.name_ar AS brand_name,
         pv.name_en, 
         pv.name_ar, 
-        pv.sku, 
-        pv.barcode,
-        pv.shelf_location, 
         pv.stock_quantity, 
         pv.reorder_threshold, 
         pv.is_active,

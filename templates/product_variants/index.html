@@ -109,22 +109,7 @@
                     <p>Brand name : {{variant.brand_name}}</p>
                     <p>Arabic Name: {{variant.name_ar}}</p>
                     <p>English Name: {{variant.name_en}}</p>
-                    <p>SKU: {{variant.sku}}</p>
-                <p>
-                    Barcode:
-                    {% match variant.barcode %}
-                    {% when Some(bc) %}{{ bc }}
-                    {% when None %}N/A
-                    {% endmatch %}
-                </p>
-                
-                <p>
-                    Shelf Location:
-                    {% match variant.shelf_location %}
-                    {% when Some(loc) %}{{ loc }}
-                    {% when None %}N/A
-                    {% endmatch %}
-                </p>
+                   
                     <p>Stock Quantity: {{variant.stock_quantity}}</p>
                     <p>Reorder Threshold: {{variant.reorder_threshold}}</p>
                     <p>Is Active: {{variant.is_active}}</p>

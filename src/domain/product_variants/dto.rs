@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::FromRow;
 
-use crate::domain::{brand::dto::{BrandResponseDTO, BrandsListDTO}, product::dto::ProductResponseDTO};
+use crate::domain::{brand::dto::{BrandResponseDTO, BrandsListDTO}, product::dto::ProductListDTO};
 
 pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
@@ -14,11 +14,7 @@ where
     let opt = Option::<String>::deserialize(deserializer)?;
     Ok(opt.filter(|s| !s.trim().is_empty()))
 }
-#[derive(serde::Serialize, sqlx::FromRow)]
-pub struct ProductListDTO {
-    pub id: i64,
-    pub name_ar: String,
-}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ProductVariantsResponseDTO {
     pub id: i64,
@@ -26,9 +22,6 @@ pub struct ProductVariantsResponseDTO {
     pub brand_name: String,
     pub name_ar: String,
     pub name_en: String,
-    pub sku: String,
-    pub barcode: Option<String>,
-    pub shelf_location: Option<String>,
     pub stock_quantity: i32,
     pub reorder_threshold: i32,
     pub is_active: bool,
@@ -63,9 +56,6 @@ pub struct FormErrors {
     pub brand_name: Option<String>,
     pub name_ar: Option<String>,
     pub name_en: Option<String>,
-    pub sku: Option<String>,
-    pub barcode: Option<String>,
-    pub shelf_location: Option<String>,
     pub stock_quantity: Option<String>,
     pub reorder_threshold: Option<String>,
     pub is_active: Option<String>,
@@ -77,9 +67,6 @@ impl FormErrors {
     pub fn has_errors(&self) -> bool {
             self.name_ar.is_some()
             || self.name_en.is_some()
-            || self.sku.is_some()
-            || self.barcode.is_some()
-            || self.shelf_location.is_some()
             || self.stock_quantity.is_some()
             || self.reorder_threshold.is_some()
             || self.is_active.is_some()
@@ -94,11 +81,6 @@ pub struct FormDTO {
     pub brand_name: String,
     pub name_ar: String,
     pub name_en: String,
-    pub sku: String,
-    #[serde(default, deserialize_with = "empty_string_as_none")]
-    pub barcode: Option<String>,
-    #[serde(default, deserialize_with = "empty_string_as_none")]
-    pub shelf_location: Option<String>,
     pub stock_quantity: i32,
     pub reorder_threshold: i32,
     pub is_active: bool,
@@ -113,19 +95,6 @@ impl FormDTO {
         self.brand_name = self.brand_name.trim().to_string();
         self.name_ar = self.name_ar.trim().to_string();
         self.name_en = self.name_en.trim().to_string();
-        self.sku = self.sku.trim().to_string();
-        self.barcode = self
-            .barcode
-            .as_deref()
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(ToString::to_string);
-        self.shelf_location = self
-            .shelf_location
-            .as_deref()
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(ToString::to_string);
         self.notes = self
             .notes
             .as_deref()
@@ -162,9 +131,6 @@ impl Default for FormDTO {
             brand_name: String::new(),
             name_ar: String::new(),
             name_en: String::new(),
-            sku: String::new(),
-            barcode: None,
-            shelf_location: None,
             stock_quantity: 0,
             reorder_threshold: 0,
             is_active: true,
