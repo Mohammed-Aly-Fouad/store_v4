@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/static/js/main.js" defer></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <title>مكتب نور - الصفحة الرئيسية</title>
+</head>
+
+<body class="page-layout">
+    <!--############ Flash Messages ############## -->
+    <div class="page-layout__flash-messages">
+        {% if let Some(msg) = success_message %}
+        <div role="status" class="flash flash--success show">
+            <p class="flash-messages__text">{{ msg }}</p>
+        </div>
+        {% endif %}
+
+        {% if let Some(msg) = error_message %}
+        <div role="alert" class="flash flash--error show">
+            <p class="flash-messages__text">{{ msg }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <!--############ Header ############## -->
+    <header class="page-layout__header">
+        <div class="header__title">
+            <h1>الصفحة الرئيسية</h1>
+        </div>
+        <div class=" search-container header__search">
+            <input type="search" name="q" class="header__search-input" placeholder="بحث عن متغير ..." autocomplete="off"
+                hx-get="/web/product_variants/search" hx-trigger="keyup changed delay:300ms, search"
+                hx-target="#search-results-dropdown">
+            <div id="search-results-dropdown" class="search-dropdown"></div>
+        </div>
+        <div class="header__action">
+            <a href="/web/product_variants/new" class="header__btn btn btn--primary">إضافة متغير</a>
+        </div>
+    </header>
+    <!--############ Header ############## -->
+    <aside class="page-layout__sidebar">
+        <h2 class="sidebar__title">لوحة التحكم</h2>
+        <nav class="nav">
+            <ul class="nav__list">
+                <li class="nav__item">
+
+                    <a href="/web" class="nav__link 
+                     {% if current_page == " home" %} nav__link--active {% endif %}"> الصفحة الرئيسية</a>
+
+                </li>
+                <li class="nav__item">
+
+                    <a href="/web/categories" class="nav__link 
+                     {% if current_page == " categories" %} nav__link--active {% endif %}">إدارة الفئات</a>
+
+                </li>
+                <li class="nav__item">
+
+                    <a href="/web/products" class="nav__link 
+                     {% if current_page == " products" %} nav__link--active {% endif %}">إدارة الأصناف</a>
+
+                </li>
+                <li class="nav__item">
+
+                    <a href="/web/brands" class="nav__link 
+                                         {% if current_page == " brands" %} nav__link--active {% endif %}">إدارة
+                        الماركات</a>
+
+                </li>
+                <li class="nav__item">
+
+                    <a href="/web/product_variants" class="nav__link 
+                                                         {% if current_page == "product_variants" %} nav__link--active
+                        {% endif %}">إدارة متغيرات الأصناف</a>
+
+                </li>
+            </ul>
+        </nav>
+    </aside>
+    <!--############ main Form ############## -->
+    <main class="page-layout__main">
+        <form method="post" action="/web/brands">
+        <div class="field">
+            <label for="product_name">اسم المنتج</label>
+            <input type="text" id="product_name" name="product_name" placeholder="e.g. قلم جاف" value="{{ form.product_name }}">
+            {% if let Some(errs) = errors %}
+            {% if let Some(err) = errs.product_name %}
+            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                {{ err }}
+            </span>
+            {% endif %}
+            {% endif %}
+        </div>
+       
+            <div class="field">
+                <label for="brand_name">الماركة</label>
+                <input type="text" id="brand_name" name="brand_name" placeholder="e.g. ROTRING" value="{{ form.brand_name }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.brand_name %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="field">
+                <label for="name_ar">الاسم بالعربية</label>
+                <input type="text" id="name_ar" name="name_ar" placeholder="e.g.  روترنج" value="{{ form.name_ar }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.name_ar %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="field">
+                <label for="name_en">الاسم بالإنجليزية</label>
+                <input type="text" id="name_en" name="name_en" placeholder="e.g. ROTRING" value="{{ form.name_en }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.name_en %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="field">
+                <label for="name_en">sku</label>
+                <input type="text" id="sku" name="sku" placeholder="e.g. ROTRING" value="{{ form.sku }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.sku %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="field">
+                <label for="barcode">barcode</label>
+            <input type="text" id="barcode" name="barcode" placeholder="e.g. ROTRING"
+                value="{{ form.barcode.as_deref().unwrap_or("") }}">
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.barcode %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+        <div class="field">
+            <label for="shelf_location">shelf_location</label>
+            <input type="text" id="shelf_location" name="shelf_location" placeholder="e.g. ROTRING"
+                value="{{ form.shelf_location.as_deref().unwrap_or("") }}">
+            {% if let Some(errs) = errors %}
+            {% if let Some(err) = errs.shelf_location %}
+            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                {{ err }}
+            </span>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="field">
+            <label for="stock_quantity">الكمية المتاحة</label>
+            <input type="text" id="stock_quantity" name="stock_quantity" placeholder="e.g. ROTRING" value="{{ form.stock_quantity }}">
+            {% if let Some(errs) = errors %}
+            {% if let Some(err) = errs.stock_quantity %}
+            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                {{ err }}
+            </span>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="field">
+            <label for="reorder_threshold">حد إعادة الطلب</label>
+            <input type="text" id="reorder_threshold" name="reorder_threshold" placeholder="e.g. ROTRING"
+                value="{{ form.reorder_threshold }}">
+            {% if let Some(errs) = errors %}
+            {% if let Some(err) = errs.reorder_threshold %}
+            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                {{ err }}
+            </span>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="field">
+            <label for="is_active">نشط</label>
+            <input type="text" id="is_active" name="is_active" placeholder="e.g. ROTRING"
+                value="{{ form.is_active }}">
+            {% if let Some(errs) = errors %}
+            {% if let Some(err) = errs.is_active %}
+            <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                {{ err }}
+            </span>
+            {% endif %}
+            {% endif %}
+        </div>
+       
+
+<div class="field" style="margin-top: 1.5rem;">
+    <label>المميزات / الخصائص (Attributes)</label>
+    <div id="attributes-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+        {% for (key, val) in form.attr_pairs() %}
+        <div class="attr-row" style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" name="attr_keys[]" value="{{ key }}" placeholder="الخاصية (Key e.g. color)"
+                style="flex: 1;">
+            <input type="text" name="attr_values[]" value="{{ val }}" placeholder="القيمة (Value e.g. red)"
+                style="flex: 1;">
+            <button type="button" onclick="this.parentElement.remove()"
+                style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    <button type="button" onclick="addAttrRow()" style="margin-top: 10px; padding: 6px 12px; cursor: pointer;">+ إضافة
+        خاصية</button>
+</div>
+            <!-- الملاحظات -->
+            <div class="field" style="margin-top: 1rem;">
+                <label for="notes">ملاحظات (اختياري)</label>
+                <textarea id="notes" name="notes"
+                    placeholder="أي ملاحظات إضافية عن الماركة">{% if let Some(notes) = form.notes %}{{ notes }}{% endif %}</textarea>
+                {% if let Some(errs) = errors %}
+                {% if let Some(err) = errs.notes %}
+                <span class="error-message" style="color: #dc2626; font-size: 0.85rem; margin-top: 4px; display: block;">
+                    {{ err }}
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+    
+    
+    
+            <div class="form-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary">إضافة المنتج</button>
+                <a href="/web/brands" class="btn btn-ghost">إلغاء</a>
+            </div>
+    
+        </form>
+    </main>
+    
+    <footer class="page-layout__footer">
+        <p>جميع الحقوق محفوظة™️ لمكتب نور</p>
+    </footer>
+    </body>
+    
+    
+    </html>

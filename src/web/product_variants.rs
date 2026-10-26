@@ -1,7 +1,7 @@
 use axum::{Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Response}, routing::get};
 use sqlx::encode::IsNull::No;
 
-use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductResponseDTO, product_variants::dto::{ProductListDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
+use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductResponseDTO, product_variants::dto::{CreateFormPage, FormDTO, ProductListDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
 
 
 
@@ -193,7 +193,16 @@ async fn render_new_variant_page(
 
     let products = products_list(&state).await.unwrap_or_default();
     let brands = brands_list(&state).await.unwrap_or_default();
-   Json(brands).into_response()
+    
+    CreateFormPage {
+        products,
+        brands,
+        form: FormDTO::default(),
+        errors: None,
+        success_message,
+        error_message,
+        current_page: "product_variants".to_string()
+    }.into_response()
 }
 
 // ============================================================================

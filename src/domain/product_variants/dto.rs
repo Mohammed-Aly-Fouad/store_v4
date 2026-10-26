@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::FromRow;
 
-use crate::domain::{brand::dto::BrandResponseDTO, product::dto::ProductResponseDTO};
+use crate::domain::{brand::dto::{BrandResponseDTO, BrandsListDTO}, product::dto::ProductResponseDTO};
 
 pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
@@ -65,7 +65,7 @@ pub struct FormErrors {
     pub name_en: Option<String>,
     pub sku: Option<String>,
     pub barcode: Option<String>,
-    pub shlf_location: Option<String>,
+    pub shelf_location: Option<String>,
     pub stock_quantity: Option<String>,
     pub reorder_threshold: Option<String>,
     pub is_active: Option<String>,
@@ -75,11 +75,11 @@ pub struct FormErrors {
 
 impl FormErrors {
     pub fn has_errors(&self) -> bool {
-        self.name_ar.is_some()
+            self.name_ar.is_some()
             || self.name_en.is_some()
             || self.sku.is_some()
             || self.barcode.is_some()
-            || self.shlf_location.is_some()
+            || self.shelf_location.is_some()
             || self.stock_quantity.is_some()
             || self.reorder_threshold.is_some()
             || self.is_active.is_some()
@@ -88,7 +88,7 @@ impl FormErrors {
     }
 }
 
-#[derive(Debug, Deserialize, Default, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FormDTO {
     pub product_name: String,
     pub brand_name: String,
@@ -136,6 +136,46 @@ impl FormDTO {
 
    
 }
+
+impl FormDTO {
+    pub fn attr_pairs(&self) -> Vec<(String, String)> {
+        match &self.attr.0 {
+            serde_json::Value::Object(map) => map
+                .iter()
+                .map(|(k, v)| {
+                    let val = match v {
+                        serde_json::Value::String(s) => s.clone(),
+                        other => other.to_string(),
+                    };
+                    (k.clone(), val)
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+}
+
+impl Default for FormDTO {
+    fn default() -> Self {
+        Self {
+            product_name: String::new(),
+            brand_name: String::new(),
+            name_ar: String::new(),
+            name_en: String::new(),
+            sku: String::new(),
+            barcode: None,
+            shelf_location: None,
+            stock_quantity: 0,
+            reorder_threshold: 0,
+            is_active: true,
+            notes: None,
+            attr: sqlx::types::Json(serde_json::json!({
+                "color": "",
+                "size": ""
+            })),
+        }
+    }
+}
 // ############ Templates ##################
 #[derive(Template, WebTemplate)]
 #[template(path = "product_variants/index.html")]
@@ -146,11 +186,17 @@ pub struct ProductVariantsTemplate {
     pub current_page: String,
 }
 
+
 #[derive(Template, WebTemplate)]
 #[template(path = "product_variants/create_form.html")]
 pub struct CreateFormPage {
-    products: Vec<ProductResponseDTO>,
-    brands: Vec<BrandResponseDTO>
+    pub products: Vec<ProductListDTO>,
+    pub brands: Vec<BrandsListDTO>,
+    pub form: FormDTO,
+    pub errors: Option<FormErrors>,
+    pub current_page: String,
+    pub error_message: Option<String>,
+    pub success_message: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
