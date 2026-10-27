@@ -132,23 +132,6 @@
         {% endif %}
     </div>
        
-            <div class="field" style="margin-top: 1.5rem;">
-                <label>المميزات / الخصائص (Attributes)</label>
-                <div id="attributes-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
-                    {% for (key, val) in form.attr_pairs() %}
-                    <div class="attr-row" style="display: flex; gap: 10px; align-items: center;">
-                        <input type="text" name="attr_keys[]" value="{{ key }}" placeholder="الخاصية (Key e.g. color)"
-                            style="flex: 1;">
-                        <input type="text" name="attr_values[]" value="{{ val }}" placeholder="القيمة (Value e.g. red)"
-                            style="flex: 1;">
-                        <button type="button" onclick="this.parentElement.remove()"
-                            style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">✕</button>
-                    </div>
-                    {% endfor %}
-                </div>
-                <button type="button" onclick="addAttrRow()" style="margin-top: 10px; padding: 6px 12px; cursor: pointer;">+ إضافة
-                    خاصية</button>
-            </div>
             <div class="field">
                 <label for="name_ar">الاسم بالعربية</label>
                 <input type="text" id="name_ar" name="name_ar" placeholder="e.g.  روترنج" value="{{ form.name_ar }}">

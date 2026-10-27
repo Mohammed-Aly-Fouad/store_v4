@@ -42,7 +42,6 @@ CREATE TABLE public.product_variants
     stock_quantity     integer NOT NULL DEFAULT 0,
     reorder_threshold  integer NOT NULL DEFAULT 0,
     is_active          boolean NOT NULL DEFAULT true,
-    attr               jsonb NOT NULL DEFAULT '{}'::jsonb,
     notes              text,
     created_at         timestamp with time zone NOT NULL DEFAULT now(),
     updated_at         timestamp with time zone NOT NULL DEFAULT now(),
@@ -99,9 +98,6 @@ CREATE INDEX idx_product_variants_search_name_en
 -- ========================================================
 -- 4. JSONB & Partial Active Indexes
 -- ========================================================
-
-CREATE INDEX idx_product_variants_attr_gin
-    ON public.product_variants USING gin (attr);
 
 CREATE INDEX idx_product_variants_active_product
     ON public.product_variants (product_id)

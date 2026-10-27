@@ -113,16 +113,6 @@
                     <p>Stock Quantity: {{variant.stock_quantity}}</p>
                     <p>Reorder Threshold: {{variant.reorder_threshold}}</p>
                     <p>Is Active: {{variant.is_active}}</p>
-                    {% let attrs = variant.attr_pairs() %}
-                    {% if attrs.is_empty() %}
-                    <p>الخصائص: N/A</p>
-                    {% else %}
-                    <ul class="card__attrs">
-                        {% for (key, value) in attrs %}
-                        <li><strong>{{ key }}:</strong> {{ value }}</li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
                     <p>
                         Notes:
                         {% match variant.notes %}

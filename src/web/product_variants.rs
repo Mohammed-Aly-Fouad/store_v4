@@ -32,7 +32,6 @@ async fn fetch_all_product_variants(state: &AppState) -> Result<Vec<ProductVaria
             pv.stock_quantity, 
             pv.reorder_threshold,
             pv.is_active, 
-            pv.attr, 
             pv.notes, 
             pv.created_at, 
             pv.updated_at 
@@ -95,7 +94,6 @@ async fn fetch_variant_by_id(
             pv.stock_quantity, 
             pv.reorder_threshold,
             pv.is_active, 
-            pv.attr, 
             pv.notes, 
             pv.created_at, 
             pv.updated_at 
@@ -251,7 +249,6 @@ let variants = sqlx::query_as!(
         pv.stock_quantity, 
         pv.reorder_threshold, 
         pv.is_active,
-        pv.attr, 
         pv.notes, 
         pv.created_at, 
         pv.updated_at

@@ -25,30 +25,11 @@ pub struct ProductVariantsResponseDTO {
     pub stock_quantity: i32,
     pub reorder_threshold: i32,
     pub is_active: bool,
-    pub attr: sqlx::types::Json<serde_json::Value>, // or your specific Value type
     pub notes: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl ProductVariantsResponseDTO {
-    /// يحوّل attr (JSON object) إلى أزواج (المفتاح، القيمة) للعرض في القالب
-    pub fn attr_pairs(&self) -> Vec<(String, String)> {
-        match &self.attr.0 {
-            serde_json::Value::Object(map) => map
-                .iter()
-                .map(|(k, v)| {
-                    let val = match v {
-                        serde_json::Value::String(s) => s.clone(),
-                        other => other.to_string(),
-                    };
-                    (k.clone(), val)
-                })
-                .collect(),
-            _ => Vec::new(),
-        }
-    }
-}
 
 #[derive(Default, Debug, Serialize)]
 pub struct FormErrors {
@@ -60,7 +41,6 @@ pub struct FormErrors {
     pub reorder_threshold: Option<String>,
     pub is_active: Option<String>,
     pub notes: Option<String>,
-    pub attr: Option<String>,
 }
 
 impl FormErrors {
@@ -70,7 +50,6 @@ impl FormErrors {
             || self.stock_quantity.is_some()
             || self.reorder_threshold.is_some()
             || self.is_active.is_some()
-            || self.attr.is_some()
             || self.notes.is_some()
     }
 }
@@ -85,7 +64,6 @@ pub struct FormDTO {
     pub stock_quantity: i32,
     pub reorder_threshold: i32,
     pub is_active: bool,
-    pub attr: sqlx::types::Json<serde_json::Value>, // or your specific Value type
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub notes: Option<String>,
 }
@@ -107,24 +85,6 @@ impl FormDTO {
    
 }
 
-impl FormDTO {
-    pub fn attr_pairs(&self) -> Vec<(String, String)> {
-        match &self.attr.0 {
-            serde_json::Value::Object(map) => map
-                .iter()
-                .map(|(k, v)| {
-                    let val = match v {
-                        serde_json::Value::String(s) => s.clone(),
-                        other => other.to_string(),
-                    };
-                    (k.clone(), val)
-                })
-                .collect(),
-            _ => Vec::new(),
-        }
-    }
-}
-
 impl Default for FormDTO {
     fn default() -> Self {
         Self {
@@ -136,11 +96,7 @@ impl Default for FormDTO {
             reorder_threshold: 0,
             is_active: true,
             notes: None,
-            attr: sqlx::types::Json(serde_json::json!({
-                "color": "",
-                "size": ""
-            })),
-        }
+}
     }
 }
 // ############ Templates ##################
