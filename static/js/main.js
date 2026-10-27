@@ -77,3 +77,28 @@ function addAttrRow() {
     `;
   container.appendChild(row);
 }
+
+function addAttribute() {
+  const container = document.getElementById("attributes");
+
+  const row = document.createElement("div");
+  row.className = "attribute-row";
+
+  row.innerHTML = `
+        <input name="attribute_keys"
+               placeholder="اسم الخاصية"
+               required>
+
+        <input name="attribute_values"
+               placeholder="قيمة الخاصية"
+               required>
+
+        <button type="button"
+                onclick="this.parentElement.remove()">
+            حذف
+        </button>
+    `;
+
+  container.appendChild(row);
+}
+window.addAttribute = addAttribute;

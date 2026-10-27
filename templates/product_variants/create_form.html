@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{# <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
@@ -66,7 +66,7 @@
                 <li class="nav__item">
 
                     <a href="/web/brands" class="nav__link 
-                                         {% if current_page == " brands" %} nav__link--active {% endif %}">إدارة
+                                         {% if current_page == "brands" %} nav__link--active {% endif %}">إدارة
                         الماركات</a>
 
                 </li>
@@ -86,13 +86,13 @@
         <div class="field">
             <label for="product_name">اختر منتج</label>
         
-            <select id="product_name" name="product_name">
+            <select id="product_name" name="product_id">
                 <option value="" disabled selected>
                     اختر ماركة من ضمن القائمة
                 </option>
                 {% for product in products %}
                 {% let is_selected = form.product_name == product.name_ar %}
-                <option value="{{product.name_ar}}" {% if is_selected %} selected {% endif %}>
+                <option value="{{product.id}}" {% if is_selected %} selected {% endif %}>
                     {{product.name_ar}}
                 </option>
                 {% endfor%}
@@ -110,13 +110,13 @@
     <div class="field">
         <label for="brand_name">اختر ماركة</label>
     
-        <select id="brand_name" name="brand_name">
+        <select id="brand_name" name="brand_id">
             <option value="" disabled selected>
                 اختر ماركة من ضمن القائمة
             </option>
             {% for brand in brands %}
             {% let is_selected = form.brand_name == brand.name_ar %}
-            <option value="{{brand.name_ar}}" {% if is_selected %} selected {% endif %}>
+            <option value="{{brand.id}}" {% if is_selected %} selected {% endif %}>
                 {{brand.name_ar}}
             </option>
             {% endfor%}
@@ -131,7 +131,27 @@
         {% endif %}
         {% endif %}
     </div>
-       
+    <!-- تجربة -->
+
+    
+    <h3>الخصائص</h3>
+    
+    <div id="attributes">
+        <div class="attribute-row">
+            <input name="attribute_keys" placeholder="اسم الخاصية">
+    
+            <input name="attribute_values" placeholder="قيمة الخاصية">
+    
+            <button type="button" onclick="this.parentElement.remove()">
+                حذف
+            </button>
+        </div>
+    </div>
+    
+    <button type="button" onclick="addAttribute()">
+        إضافة خاصية
+    </button>
+    <!-- تجربة نهاية-->
             <div class="field">
                 <label for="name_ar">الاسم بالعربية</label>
                 <input type="text" id="name_ar" name="name_ar" placeholder="e.g.  روترنج" value="{{ form.name_ar }}">
@@ -223,4 +243,4 @@
     </body>
     
     
-    </html>
+    </html> #}

@@ -71,20 +71,20 @@
                         الماركات</a>
 
                 </li>
-        
-            <li class="nav__item">
 
-                <a href="/web/product_variants" class="nav__link 
-                                         {% if current_page == "product_variants" %} nav__link--active {% endif
-                    %}">إدارة متغيرات الأصناف</a>
+                <li class="nav__item">
 
-            </li>
+                    <a href="/web/product_variants" class="nav__link 
+                                         {% if current_page == " product_variants" %} nav__link--active {% endif
+                        %}">إدارة متغيرات الأصناف</a>
+
+                </li>
             </ul>
         </nav>
     </aside>
 
     <!--############ main ############## -->
-    
+
     <main class="page-layout__main">
         <section class="collection">
             <div class="collection__info">
@@ -107,9 +107,16 @@
                     </div>
                     <p>product name : {{variant.product_name}}</p>
                     <p>Brand name : {{variant.brand_name}}</p>
+                    <td>
+                        <div class="product-attributes" style="color: red;">
+                            {% for (key, value) in variant.attr.0 %}
+                            <span class="badge"><strong>{{ key }}:</strong> {{ value }}</span>
+                            {% endfor %}
+                        </div>
+                    </td>
                     <p>Arabic Name: {{variant.name_ar}}</p>
                     <p>English Name: {{variant.name_en}}</p>
-                   
+
                     <p>Stock Quantity: {{variant.stock_quantity}}</p>
                     <p>Reorder Threshold: {{variant.reorder_threshold}}</p>
                     <p>Is Active: {{variant.is_active}}</p>
@@ -120,25 +127,27 @@
                         {% when None %}N/A
                         {% endmatch %}
                     </p>
-                                        <p>{{ variant.created_at.format(" %Y-%m-%d") }}</p>
+                    <p>{{ variant.created_at.format(" %Y-%m-%d") }}</p>
 
                     <footer class="card__footer">
                         <time datetime="{{ variant.created_at.format(" %Y-%m-%d") }}" class="card__date">
                             {{ variant.created_at.format("%Y-%m-%d") }}
                         </time>
                         <div class="card__actions">
-                            <a href="/web/product_variants/{{ variant.id }}/edit" class="btn btn--sm btn--text">تعديل</a>
-            
-            
-            
-            
-            
-            
-                            <form action="/web/product_variants/{{ variant.id }}/delete" method="POST" class="inline-form delete-form">
+                            <a href="/web/product_variants/{{ variant.id }}/edit"
+                                class="btn btn--sm btn--text">تعديل</a>
+
+
+
+
+
+
+                            <form action="/web/product_variants/{{ variant.id }}/delete" method="POST"
+                                class="inline-form delete-form">
                                 <button type="submit" class="btn btn--sm btn--danger-text">حذف</button>
                             </form>
-            
-            
+
+
                         </div>
                     </footer>
                 </article>
@@ -146,14 +155,14 @@
             </div>
             </div>
             <!--#########  end of collection grid ########### -->
-            
-            </section>
-            </main>
-            <!--############ Footer ############## -->
-            
-            <footer class="page-layout__footer">
-                <p>جميع الحقوق محفوظة™️ لمكتب نور</p>
-            </footer>
-            </body>
-            
-            </html>
+
+        </section>
+    </main>
+    <!--############ Footer ############## -->
+
+    <footer class="page-layout__footer">
+        <p>جميع الحقوق محفوظة™️ لمكتب نور</p>
+    </footer>
+</body>
+
+</html>

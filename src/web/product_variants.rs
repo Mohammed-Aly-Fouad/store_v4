@@ -1,7 +1,7 @@
 use axum::{Form, Json, Router, extract::{Query, State}, http::StatusCode, response::{IntoResponse, Redirect, Response}, routing::{get, post}};
 use sqlx::encode::IsNull::No;
 
-use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductListDTO, product_variants::dto::{CreateFormPage, FormDTO, ProductVariantsResponseDTO, ProductVariantsTemplate, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
+use crate::{domain::{brand::dto::BrandsListDTO, category::dto::FlashParams, home::dto::HomeTemplate, product::dto::ProductListDTO, product_variants::dto::{ProductVariantsTemplate, ProductVariantsResponseDTO, VariantSearchQuery, VariantSearchResultsTemplate}}, state::AppState};
 
 
 
@@ -14,32 +14,32 @@ pub fn router() -> Router<AppState> {
     Router::new()
     .route("/", get(render_product_variants_page))
     .route("/search", get(search_variants))
-    .route("/new", get(render_new_variant_page))
-    .route("/", post(create_variant))
+//     .route("/new", get(render_new_variant_page))
+//     .route("/", post(create_variant))
 }
 
 
 async fn fetch_all_product_variants(state: &AppState) -> Result<Vec<ProductVariantsResponseDTO>, sqlx::Error> {
-    sqlx::query_as!(
-        ProductVariantsResponseDTO,
+    sqlx::query_as::<sqlx::Postgres, ProductVariantsResponseDTO>(
         r#"
         SELECT 
             pv.id,
             p.name_ar AS product_name,
             b.name_ar AS brand_name,
-            pv.name_ar, 
-            pv.name_en, 
-            pv.stock_quantity, 
+            pv.name_ar,
+            pv.name_en,
+            pv.stock_quantity,
             pv.reorder_threshold,
-            pv.is_active, 
-            pv.notes, 
-            pv.created_at, 
-            pv.updated_at 
+            pv.is_active,
+            pv.notes,
+            pv.created_at,
+            pv.updated_at,
+            pv.attr
         FROM product_variants pv
         JOIN products p ON pv.product_id = p.id
         JOIN brands b ON pv.brand_id = b.id
         ORDER BY pv.id DESC
-        "#
+        "#,
     )
     .fetch_all(&state.pool)
     .await
@@ -78,35 +78,35 @@ async fn brands_list(
 
     Ok(brands)
 }
-async fn fetch_variant_by_id(
-    state: &AppState,
-    id: i64,
-) -> Option<ProductVariantsResponseDTO> {
-    sqlx::query_as!(
-        ProductVariantsResponseDTO,
-        r#"
-        SELECT 
-            pv.id,
-            p.name_ar AS product_name,
-            b.name_ar AS brand_name,
-            pv.name_ar, 
-            pv.name_en, 
-            pv.stock_quantity, 
-            pv.reorder_threshold,
-            pv.is_active, 
-            pv.notes, 
-            pv.created_at, 
-            pv.updated_at 
-        FROM product_variants pv
-        JOIN products p ON pv.product_id = p.id
-        JOIN brands b ON pv.brand_id = b.id
-        WHERE pv.id = $1
-        "#,
-        id
-    ).fetch_optional(&state.pool)
-    .await
-    .unwrap_or(None)
-}
+// async fn fetch_variant_by_id(
+//     state: &AppState,
+//     id: i64,
+// ) -> Option<ProductVariantsResponseDTO> {
+//     sqlx::query_as!(
+//         ProductVariantsResponseDTO,
+//         r#"
+//         SELECT 
+//             pv.id,
+//             p.name_ar AS product_name,
+//             b.name_ar AS brand_name,
+//             pv.name_ar, 
+//             pv.name_en, 
+//             pv.stock_quantity, 
+//             pv.reorder_threshold,
+//             pv.is_active, 
+//             pv.notes, 
+//             pv.created_at, 
+//             pv.updated_at 
+//         FROM product_variants pv
+//         JOIN products p ON pv.product_id = p.id
+//         JOIN brands b ON pv.brand_id = b.id
+//         WHERE pv.id = $1
+//         "#,
+//         id
+//     ).fetch_optional(&state.pool)
+//     .await
+//     .unwrap_or(None)
+// }
 
 pub async fn render_product_variants_page(
     State(state): State<AppState>,
@@ -167,55 +167,84 @@ let success_message = match params.action.as_deref() {
     }
 }
 
-async fn render_new_variant_page(
-    State(state): State<AppState>,
-    Query(params): Query<FlashParams>,
-) -> Response {
-    let success_message = match params.action.as_deref() {
-        Some("created") => Some("تم إضافة الصنف بنجاح".to_string()),
-        Some("updated") => Some("تم تعديل الصنف بنجاح".to_string()),
-        Some("deleted") => Some("تم حذف الصنف بنجاح".to_string()),
-        _ => None,
-    };
+// async fn render_new_variant_page(
+//     State(state): State<AppState>,
+//     Query(params): Query<FlashParams>,
+// ) -> Response {
+//     let success_message = match params.action.as_deref() {
+//         Some("created") => Some("تم إضافة الصنف بنجاح".to_string()),
+//         Some("updated") => Some("تم تعديل الصنف بنجاح".to_string()),
+//         Some("deleted") => Some("تم حذف الصنف بنجاح".to_string()),
+//         _ => None,
+//     };
 
-    let error_message = match params.error.as_deref() {
-        Some("not_found") => Some("غير موجود بقاعدة البيانات".to_string()),
-        Some("db_err") => Some("خطأ عام بقاعدة البيانات".to_string()),
-        Some("can_not_get") => Some("تعذر جلب البيانات الأساسية".to_string()),
-        _ => None,
-    };
+//     let error_message = match params.error.as_deref() {
+//         Some("not_found") => Some("غير موجود بقاعدة البيانات".to_string()),
+//         Some("db_err") => Some("خطأ عام بقاعدة البيانات".to_string()),
+//         Some("can_not_get") => Some("تعذر جلب البيانات الأساسية".to_string()),
+//         _ => None,
+//     };
 
-   let products = match products_list(&state).await {
-        Ok(p) => p,
-        Err(_) => return Redirect::to("/web/product_variants?error=can_not_get").into_response(),
-    };
+//    let products = match products_list(&state).await {
+//         Ok(p) => p,
+//         Err(_) => return Redirect::to("/web/product_variants?error=can_not_get").into_response(),
+//     };
 
-    let brands = match brands_list(&state).await {
-        Ok(b) => b,
-        Err(_) => return Redirect::to("/web/product_variants?error=can_not_get").into_response(),
-    };
+//     let brands = match brands_list(&state).await {
+//         Ok(b) => b,
+//         Err(_) => return Redirect::to("/web/product_variants?error=can_not_get").into_response(),
+//     };
     
-    CreateFormPage {
-        products,
-        brands,
-        form: FormDTO::default(),
-        errors: None,
-        success_message,
-        error_message,
-        current_page: "product_variants".to_string()
-    }.into_response()
-}
+//     CreateFormPage {
+//         products,
+//         brands,
+//         form: FormDTO::default(),
+//         errors: None,
+//         success_message,
+//         error_message,
+//         current_page: "product_variants".to_string()
+//     }.into_response()
+// }
 
 
-async fn create_variant(
-    State(state): State<AppState>,
-    Query(params): Query<FlashParams>,
-    Form(mut form): Form<FormDTO>
-) -> Response {
+// pub async fn create_variant(
+//     State(state): State<AppState>,
+//     Form(mut form): Form<FormDTO>,
+// ) -> impl IntoResponse {
+//     // 1. تنظيف النصوص
+//     form.sanitize();
 
-    Json(form).into_response()
-    // "بسم الله الرحمن الرحيم".into_response()
-}
+//     // 2. تحويل الخصائص الديناميكية إلى JSONB
+//     let attr_json = form.to_attributes_json();
+
+//     // 3. تنفيذ الاستعلام بواسطة SQLx للإدخال في الجدول
+//     let result = sqlx::query!(
+//         r#"
+//         INSERT INTO product_variants 
+//         (product_id, brand_id, name_ar, name_en, stock_quantity, reorder_threshold, is_active, notes, attr)
+//         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+//         "#,
+//         form.product_id,
+//         form.brand_id,
+//         form.name_ar,
+//         form.name_en,
+//         form.stock_quantity,
+//         form.reorder_threshold,
+//         form.is_active,
+//         form.notes,
+//         attr_json // يتم إرسالها كـ JSONB لقاعدة البيانات
+//     )
+//     .execute(&state.pool)
+//     .await;
+
+//     match result {
+//         Ok(_) => StatusCode::SEE_OTHER, // أو إعادة توجيه لصفحة النجاح
+//         Err(e) => {
+//             eprintln!("Database insertion error: {}", e);
+//             StatusCode::INTERNAL_SERVER_ERROR
+//         }
+//     }
+// }
 
 // ============================================================================
 // HANDLERS: LIVE SEARCH
@@ -237,39 +266,38 @@ pub async fn search_variants(
     // إعداد نمط البحث غير حساس للحالة (Case-Insensitive) للغتين العربية والإنجليزية
     let search_pattern = format!("%{}%", q);
 
-let variants = sqlx::query_as!(
-    ProductVariantsResponseDTO,
-    r#"
-    SELECT 
-        pv.id,
-        p.name_ar AS product_name,
-        b.name_ar AS brand_name,
-        pv.name_en, 
-        pv.name_ar, 
-        pv.stock_quantity, 
-        pv.reorder_threshold, 
-        pv.is_active,
-        pv.notes, 
-        pv.created_at, 
-        pv.updated_at
-    FROM product_variants pv
-    JOIN products p ON pv.product_id = p.id
-    JOIN brands b ON pv.brand_id = b.id
-    WHERE pv.name_en ILIKE $1 
-       OR regexp_replace(TRANSLATE(pv.name_ar, ' أإآة', ' أأآه'), '[\u064B-\u0652]', '', 'g') 
-          ILIKE regexp_replace(TRANSLATE($1, ' أإآة', ' أأآه'), '[\u064B-\u0652]', '', 'g')
-    ORDER BY pv.name_ar ASC
-    LIMIT 10
-    "#,
-    search_pattern
-)
-
-.fetch_all(&state.pool)
-.await
-.map_err(|err| {
-    tracing::error!("Failed to execute product search query: {:?}", err);
-    StatusCode::INTERNAL_SERVER_ERROR
-})?;
+    let variants = sqlx::query_as::<sqlx::Postgres, ProductVariantsResponseDTO>(
+        r#"
+        SELECT 
+            pv.id,
+            p.name_ar AS product_name,
+            b.name_ar AS brand_name,
+            pv.name_en, 
+            pv.name_ar, 
+            pv.stock_quantity, 
+            pv.reorder_threshold, 
+            pv.is_active,
+            pv.notes, 
+            pv.created_at, 
+            pv.updated_at,
+            pv.attr
+        FROM product_variants pv
+        JOIN products p ON pv.product_id = p.id
+        JOIN brands b ON pv.brand_id = b.id
+        WHERE pv.name_en ILIKE $1 
+           OR regexp_replace(TRANSLATE(pv.name_ar, ' أإآة', ' أأآه'), '[\u064B-\u0652]', '', 'g') 
+              ILIKE regexp_replace(TRANSLATE($1, ' أإآة', ' أأآه'), '[\u064B-\u0652]', '', 'g')
+        ORDER BY pv.name_ar ASC
+        LIMIT 10
+        "#,
+    )
+    .bind(search_pattern)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to execute product search query: {:?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(VariantSearchResultsTemplate {
         variants,
